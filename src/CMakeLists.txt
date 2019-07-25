@@ -71,3 +71,17 @@ if (CLANG_FORMAT)
             ${ESPRESSO_SOURCES}
     )
 endif()
+
+find_package(CUDA 9)
+if(true)
+  file(GLOB_RECURSE EspressoPPCuda_SRC "*.cu")
+
+
+  cuda_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  cuda_include_directories(${CMAKE_CURRENT_BINARY_DIR})
+  cuda_include_directories("/storage")
+  cuda_add_library(EspressoPPCuda ${EspressoPPCuda_SRC})
+  install(TARGETS EspressoPPCuda DESTINATION ${CMAKE_BINARY_DIR})
+
+  target_link_libraries(_espressopp EspressoPPCuda)
+endif()

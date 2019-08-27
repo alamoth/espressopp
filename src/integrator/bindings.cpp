@@ -61,7 +61,6 @@
 #include "VelocityVerletOnRadius.hpp"
 #include "AssociationReaction.hpp"
 #include "MinimizeEnergy.hpp"
-
 #include "EmptyExtension.hpp"
 
 namespace espressopp {

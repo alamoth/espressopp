@@ -1,4 +1,6 @@
-file(GLOB_RECURSE ESPRESSO_SOURCES *.cpp)
+file(GLOB_RECURSE ESPRESSO_SOURCES *.cpp *.cu)
+#file(GLOB_RECURSE ESPRESSO_SOURCES *.cu)
+#file(GLOB_RECURSE ESPRESSO_SOURCES *.cuh)
 file(GLOB_RECURSE NOT_ESPRESSO_SOURCES
   esutil/GenLogger.cpp
   iterator/unittest/*.cpp
@@ -25,6 +27,7 @@ list(REMOVE_ITEM ESPRESSO_SOURCES ${NOT_ESPRESSO_SOURCES})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/acconfig.hpp.cmakein
   ${CMAKE_CURRENT_BINARY_DIR}/acconfig.hpp)
 
+
 #build ESPRC
 #CMAKE_BINARY_DIR for espressopp, CMAKE_CURRENT_BINARY_DIR for for _espressopps.so and contrib for MPI.so
 if (EXTERNAL_MPI4PY)
@@ -48,10 +51,37 @@ endif (WITH_RC_FILES)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_library(_espressopp ${ESPRESSO_SOURCES})
+
+#cuda
+target_compile_features(_espressopp PUBLIC cxx_std_11)
+set_target_properties(_espressopp PROPERTIES CUDA_SEPERABLE_COMPILATION ON)
+
 target_link_libraries(_espressopp ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${MPI_LIBRARIES} ${FFTW3_LIBRARIES} ${VAMPIRTRACE_LIBRARIES})
 if(WITH_XTC)
   target_link_libraries(_espressopp ${GROMACS_LIBRARIES})
 endif()
+
+if(false)
+  file(GLOB_RECURSE CUDA_SOURCES "*.cu")
+  add_library(CUDA STATIC ${CUDA_SOURCES})
+  #set(CUDA_DIR cuda)
+  #include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${CUDA_DIR}/src)
+  #target_link_libraries(CUDA ${PYTHON_LIBRARIES} ${MPI_LIBRARIES})
+  set_target_properties(CUDA PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+  target_link_libraries(_espressopp ${CUDA})
+  #install(TARGETS CUDA LIBRARY DESTINATION ${PYTHON_INSTDIR}/cuda ARCHIVE DESTINATION ${PYTHON_INSTDIR}/cuda)
+  #install(FILES __init__.py DESTINATION ${PYTHON_INSTDIR}/cuda)
+  #if (NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
+  #add_custom_command(TARGET MPI COMMAND ${CMAKE_COMMAND} -E create_symlink
+  #  ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
+  #endif()
+  #cuda_add_library(EspressoPPCuda ${EspressoPPCuda_SRC})
+  #install(TARGETS EspressoPPCuda DESTINATION ${CMAKE_BINARY_DIR})
+  #target_link_libraries(_espressopp ${CUDA_LIBRARIES})
+  #target_link_libraries(_espressopp EspressoPPCuda -lcudart)
+endif()
+
 #python libs have not prefix (default would be 'lib')
 set_target_properties(_espressopp PROPERTIES PREFIX "" SUFFIX ".so" LIBRARY_OUTPUT_DIRECTORY ..)
 install(TARGETS _espressopp LIBRARY DESTINATION ${PYTHON_INSTDIR} ARCHIVE DESTINATION ${PYTHON_INSTDIR})
@@ -72,16 +102,4 @@ if (CLANG_FORMAT)
     )
 endif()
 
-find_package(CUDA 9)
-if(true)
-  file(GLOB_RECURSE EspressoPPCuda_SRC "*.cu")
 
-
-  cuda_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-  cuda_include_directories(${CMAKE_CURRENT_BINARY_DIR})
-  cuda_include_directories("/storage")
-  cuda_add_library(EspressoPPCuda ${EspressoPPCuda_SRC})
-  install(TARGETS EspressoPPCuda DESTINATION ${CMAKE_BINARY_DIR})
-
-  target_link_libraries(_espressopp EspressoPPCuda)
-endif()

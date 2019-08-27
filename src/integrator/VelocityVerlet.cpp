@@ -71,7 +71,8 @@ namespace espressopp {
       System& system = getSystemRef();
       storage::Storage& storage = *system.storage;
       real skinHalf = 0.5 * system.getSkin();
-
+      storage.getGPUstorage().h2dParticleVars();
+      
       // signal
       runInit();
 
@@ -314,6 +315,9 @@ namespace espressopp {
       VT_TRACER("forces");
 
       LOG4ESPP_INFO(theLogger, "calculate forces");
+
+      System& system = getSystemRef();
+      CellList realCells = system.storage->getRealCells();
 
       initForces();
 

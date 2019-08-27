@@ -19,6 +19,6 @@
 // https://svn.boost.org/trac/boost/ticket/11897
 // This is fixed in 7.5. As the following version macro was introduced in 7.5 an existance
 // check is enough to detect versions < 7.5
-#if !defined(__CUDACC_VER__) || (__CUDACC_VER__ < 70500)
+#if !defined(__CUDACC_VER__)
 #   define BOOST_NO_CXX11_VARIADIC_TEMPLATES
 #endif

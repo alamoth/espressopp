@@ -5,8 +5,19 @@ project(espressopp)
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+enable_language(CUDA)
 enable_language(C)
 enable_language(CXX)
+
+#if(NOT DEFINED CMAKE_CUDA_STANDARD)
+    set(CMAKE_CUDA_STANDARD 11)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    #include_directories(${CUDA_INCLUDE_DIRS})
+    #SET(ALL_CUDA_LIBS ${CUDA_LIBRARIES})
+    #message(STATUS "CUDA_LIBRARIES: ${CUDA_INCLUDE_DIRS} ${ALL_CUDA_LIBS} ${CUDA_LIBRARIES}")
+    #set(CUDA_INCLUDE_DIRECTORIES ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    #list( APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_30,code=compute_30 )
+#endif()
 
 enable_testing()
 

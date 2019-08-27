@@ -59,7 +59,8 @@ namespace espressopp {
       : SystemAccess(system),
         halfCellInt(halfCellInt),
         inBuffer(*system->comm),
-        outBuffer(*system->comm)
+        outBuffer(*system->comm),
+        GPUstorage(system)
     {
       //logger.setLevel(log4espp::Logger::TRACE);
       LOG4ESPP_INFO(logger, "Created new storage object for a system, has buffers");

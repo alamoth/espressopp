@@ -39,6 +39,7 @@
 #include "Cell.hpp"
 #include "Buffer.hpp"
 #include "types.hpp"
+#include "StorageGPU.hpp"
 
 namespace espressopp {
 
@@ -171,6 +172,9 @@ namespace espressopp {
       CellList &getLocalCells() { return localCells; }
       CellList &getRealCells()  { return realCells;  }
       CellList &getGhostCells() { return ghostCells; }
+            
+      StorageGPU &getGPUstorage() { return GPUstorage; }
+
 
       python::list getRealParticleIDs();
 
@@ -407,6 +411,9 @@ namespace espressopp {
       InBuffer inBuffer;
       OutBuffer outBuffer;
 
+      StorageGPU GPUstorage;
+
+
 
       // used for AdResS
       shared_ptr<FixedTupleListAdress> fixedtupleList;
@@ -420,6 +427,8 @@ namespace espressopp {
       void savePosition(size_t id);
       void restorePositions();
       void clearSavedPositions();
+
+      
 
     private:
       // map particle id to Particle * for all particles on this node

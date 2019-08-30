@@ -62,6 +62,7 @@
 #include "AssociationReaction.hpp"
 #include "MinimizeEnergy.hpp"
 #include "EmptyExtension.hpp"
+#include "GPUTransfer.hpp"
 
 namespace espressopp {
   namespace integrator {
@@ -105,6 +106,7 @@ namespace espressopp {
       AssociationReaction::registerPython();
       MinimizeEnergy::registerPython();
       EmptyExtension::registerPython();
+      GPUTransfer::registerPython();
     }
   }
 }

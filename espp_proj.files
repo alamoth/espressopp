@@ -7985,6 +7985,9 @@ src/integrator/DPDThermostat.py
 src/integrator/EmptyExtension.cpp
 src/integrator/EmptyExtension.hpp
 src/integrator/EmptyExtension.py
+src/integrator/GPUTransfer.cpp
+src/integrator/GPUTransfer.hpp
+src/integrator/GPUTransfer.py
 src/integrator/ExtAnalyze.cpp
 src/integrator/ExtAnalyze.hpp
 src/integrator/ExtAnalyze.py

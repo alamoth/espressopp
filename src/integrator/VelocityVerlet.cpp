@@ -71,7 +71,6 @@ namespace espressopp {
       System& system = getSystemRef();
       storage::Storage& storage = *system.storage;
       real skinHalf = 0.5 * system.getSkin();
-      storage.getGPUstorage().h2dParticleVars();
       
       // signal
       runInit();

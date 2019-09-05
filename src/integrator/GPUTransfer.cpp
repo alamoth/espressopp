@@ -39,25 +39,74 @@ namespace espressopp {
     GPUTransfer::GPUTransfer(shared_ptr<System> system)
     : Extension(system)
     {
+      // Initialize GPU
+      System& _system = getSystemRef();
+      StorageGPU* GPUStorage = _system.storage->getGPUstorage();
+      
+      GPUStorage->initNullPtr();
+      GPUStorage->numberCells = _system.storage->getLocalCells().size();
+      GPUStorage->allocateCellData();
     }
 
     void GPUTransfer::disconnect(){
-      //_aftInitF.disconnect();
+      _onParticlesChanged.disconnect();
+      _aftInitF.disconnect();
+      _aftCalcF.disconnect();
     }
 
     void GPUTransfer::connect(){
-      // connection to initialisation
-  	  //_aftInitF  = integrator->aftInitF.connect( boost::bind(&GPUTransfer::applyForceToAll, this));
+      System& system = getSystemRef();
+
+      _onParticlesChanged = system.storage->onParticlesChanged.connect( boost::bind(&GPUTransfer::ParticleStatics, this));
+      _aftInitF = integrator->aftInitF.connect( boost::bind(&GPUTransfer::ParticleVars, this));
+  	  _aftCalcF = integrator->aftCalcF.connect( boost::bind(&GPUTransfer::ParticleForces, this));
     }
 
-    void h2dParticleVars(){
-
+    void GPUTransfer::ParticleVars(){
+      System& system = getSystemRef();
+      CellList localCells = system.storage->getLocalCells();
+      StorageGPU* GPUStorage = system.storage->getGPUstorage();
+      unsigned int counterParticles = 0;
+      for(unsigned int i = 0; i < localCells.size(); ++i) {
+        GPUStorage->h_cellOffsets[i] = counterParticles;
+        GPUStorage->h_numberCellNeighbors[i] = localCells[i]->neighborCells.size() == 0 ? 0 : 1;
+        for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
+          GPUStorage->h_px[counterParticles] = localCells[i]->particles[j].getPos().at(0);
+          GPUStorage->h_py[counterParticles] = localCells[i]->particles[j].getPos().at(1);
+          GPUStorage->h_pz[counterParticles] = localCells[i]->particles[j].getPos().at(2);
+          counterParticles++;
+        }
+      }
+      GPUStorage->h2dParticleVars();
+      //printf("Size localCells: %ld\n", localCells.size());
     }
-    void h2dParticleStatics(){
 
+    void GPUTransfer::ParticleStatics(){
+      //printf("ParticleStatics signal\n");
+      System& system = getSystemRef();
+      CellList localCells = system.storage->getLocalCells();
+      StorageGPU* GPUStorage = system.storage->getGPUstorage();
+
+      // Since there was a rebuild, allocate particle data new
+      GPUStorage->numberParticles = system.storage->getNLocalParticles();
+      GPUStorage->allocateParticleData(); // Could do resize and allocate only in constructor
+
+      // Fill Particle static data
+      unsigned int counterParticles = 0;
+      for(unsigned int i = 0; i < localCells.size(); ++i) {
+        for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
+          GPUStorage->h_type[counterParticles] = localCells[i]->particles[j].getType();
+          GPUStorage->h_mass[counterParticles] = localCells[i]->particles[j].getMass();
+          GPUStorage->h_drift[counterParticles] = localCells[i]->particles[j].getDrift();
+          counterParticles++;
+        }
+      }
+      GPUStorage->h2dParticleStatics();
     }
-    void d2hParticleForces(){
-      
+
+    void GPUTransfer::ParticleForces(){
+      // printf("Signal aftCalcF\n");
+      //GPUStorage->freeParticleVars();
     }
 
     /****************************************************

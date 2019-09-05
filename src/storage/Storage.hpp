@@ -173,7 +173,7 @@ namespace espressopp {
       CellList &getRealCells()  { return realCells;  }
       CellList &getGhostCells() { return ghostCells; }
             
-      StorageGPU &getGPUstorage() { return GPUstorage; }
+      StorageGPU* getGPUstorage() { return &GPUstorage; }
 
 
       python::list getRealParticleIDs();

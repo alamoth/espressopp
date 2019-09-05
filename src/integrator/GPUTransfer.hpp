@@ -43,9 +43,9 @@ namespace espressopp {
 
         GPUTransfer(shared_ptr< System > _system);
 
-        void h2dParticleVars();
-        void h2dParticleStatics();
-        void d2hParticleForces();
+        void ParticleVars();
+        void ParticleStatics();
+        void ParticleForces();
 
         virtual ~GPUTransfer() {};
 
@@ -53,9 +53,11 @@ namespace espressopp {
         static void registerPython();
 
       private:
-        boost::signals2::connection _aftCalcF, _aftInitF;
+        boost::signals2::connection _aftCalcF, _aftInitF, _onParticlesChanged;
         void connect();
         void disconnect();
+
+
 
         /** Logger */
         static LOG4ESPP_DECL_LOGGER(theLogger);

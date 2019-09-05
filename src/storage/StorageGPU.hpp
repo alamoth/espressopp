@@ -1,3 +1,4 @@
+#include "StorageGPU.cuh"
 #ifndef _STORAGE_GPU_HPP
 #define _STORAGE_GPU_HPP
 //#include "SystemAccess.hpp"
@@ -6,10 +7,12 @@
 //#include "integrator/Extension.hpp"
 //#include <boost/signals2.hpp>
 //#include "SystemAccess.hpp"
+#include <vector>
 
 
 
-namespace espressopp{
+
+
     
     //class MDIntegrator; //fwd declaration
     //class StorageGPU : public integrator::Extension {
@@ -27,28 +30,47 @@ namespace espressopp{
             //boost::signals2::connection _aftCalcF;
             //boost::signals2::connection _onParticlesChanged;
 
-            double *d_x;
-            double *d_y;
-            double *d_z;
+            int numberParticles;
+            int numberCells;
 
-            double *h_x;
-            double *h_y;
-            double *h_z;
+            double *d_px;
+            double *d_py;
+            double *d_pz;
 
-            unsigned *h_type;
-            unsigned *d_type;
+            double *h_px;
+            double *h_py;
+            double *h_pz;
+
+            double *d_fx;
+            double *d_fy;
+            double *d_fz;
+
+            double *h_fx;
+            double *h_fy;
+            double *h_fz;
+
+            int *h_type;
+            int *d_type;
 
             double *h_mass, *d_mass;
 
             double *h_drift, *d_drift;
 
-            unsigned *cellOffsets;
+            int *h_cellOffsets, *d_cellOffsets;
 
-            unsigned *numberCellNeighbors;
+            int *h_numberCellNeighbors, *d_numberCellNeighbors;
+
+            void allocateParticleData();
+            void allocateCellData();
+
+            void h2dParticleStatics();
+            void h2dParticleVars();
+            void d2hParticleForces();
+            void freeParticleVars();
+            void initNullPtr();
 
         protected:
             //shared_ptr<MDIntegrator> integrator; // this is needed for signal connection
     };
-}
 
 #endif

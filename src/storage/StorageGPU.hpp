@@ -30,41 +30,47 @@
             //boost::signals2::connection _aftCalcF;
             //boost::signals2::connection _onParticlesChanged;
 
-            int numberParticles;
-            int numberCells;
+            int numberParticles = 0;
+            int numberCells = 0;
 
-            double *d_px;
-            double *d_py;
-            double *d_pz;
+            double *d_px = 0;
+            double *d_py = 0;
+            double *d_pz = 0;
 
-            double *h_px;
-            double *h_py;
-            double *h_pz;
+            double *h_px = 0;
+            double *h_py = 0;
+            double *h_pz = 0;
 
-            double *d_fx;
-            double *d_fy;
-            double *d_fz;
+            double *d_fx = 0;
+            double *d_fy = 0;
+            double *d_fz = 0;
 
-            double *h_fx;
-            double *h_fy;
-            double *h_fz;
+            double *h_fx = 0;
+            double *h_fy = 0;
+            double *h_fz = 0;
 
-            int *h_type;
-            int *d_type;
+            int *h_type = 0;
+            int *d_type = 0;
 
-            double *h_mass, *d_mass;
+            double *h_mass  = 0; 
+            double *d_mass = 0;
 
-            double *h_drift, *d_drift;
+            double *h_drift = 0;
+            double *d_drift = 0;
 
-            int *h_cellOffsets, *d_cellOffsets;
+            int *h_cellOffsets = 0; 
+            int *d_cellOffsets = 0;
 
-            int *h_numberCellNeighbors, *d_numberCellNeighbors;
 
-            void allocateParticleData();
-            void allocateCellData();
+            int *h_numberCellNeighbors = 0;
+            int *d_numberCellNeighbors = 0;
+
+            void resizeParticleData();
+            void resizeCellData();
 
             void h2dParticleStatics();
             void h2dParticleVars();
+            void h2dCellData();
             void d2hParticleForces();
             void freeParticleVars();
             void initNullPtr();

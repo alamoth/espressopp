@@ -43,9 +43,16 @@ namespace espressopp {
 
         GPUTransfer(shared_ptr< System > _system);
 
-        void ParticleVars();
-        void ParticleStatics();
-        void ParticleForces();
+        void onDecompose();
+        void onRunInit();
+
+        void fillParticleVars();
+        void fillParticleStatics();
+        void fillCellData();
+        void getParticleForces();
+
+        void resizeParticleData();
+        void resizeCellData();
 
         virtual ~GPUTransfer() {};
 
@@ -53,7 +60,7 @@ namespace espressopp {
         static void registerPython();
 
       private:
-        boost::signals2::connection _aftCalcF, _aftInitF, _onParticlesChanged;
+        boost::signals2::connection _aftCalcF, _aftInitF, _onParticlesChanged, _runInit;
         void connect();
         void disconnect();
 

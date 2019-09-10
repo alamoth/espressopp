@@ -39,59 +39,78 @@ namespace espressopp {
     GPUTransfer::GPUTransfer(shared_ptr<System> system)
     : Extension(system)
     {
+      printf("Constructor GPUTransfer\n");
       // Initialize GPU
       System& _system = getSystemRef();
       StorageGPU* GPUStorage = _system.storage->getGPUstorage();
-      
-      GPUStorage->initNullPtr();
-      GPUStorage->numberCells = _system.storage->getLocalCells().size();
-      GPUStorage->allocateCellData();
     }
 
     void GPUTransfer::disconnect(){
       _onParticlesChanged.disconnect();
       _aftInitF.disconnect();
       _aftCalcF.disconnect();
+      _runInit.disconnect();
     }
 
     void GPUTransfer::connect(){
       System& system = getSystemRef();
-
-      _onParticlesChanged = system.storage->onParticlesChanged.connect( boost::bind(&GPUTransfer::ParticleStatics, this));
-      _aftInitF = integrator->aftInitF.connect( boost::bind(&GPUTransfer::ParticleVars, this));
-  	  _aftCalcF = integrator->aftCalcF.connect( boost::bind(&GPUTransfer::ParticleForces, this));
+      _onParticlesChanged   =   system.storage->onParticlesChanged.connect( boost::bind(&GPUTransfer::onDecompose, this));
+      _aftInitF             =   integrator->aftInitF.connect( boost::bind(&GPUTransfer::fillParticleVars, this));
+  	  _aftCalcF             =   integrator->aftCalcF.connect( boost::bind(&GPUTransfer::getParticleForces, this));
+      _runInit              =   integrator->runInit.connect ( boost::bind(&GPUTransfer::onRunInit, this));
     }
 
-    void GPUTransfer::ParticleVars(){
+
+    // Cell Data
+    //
+    void GPUTransfer::onRunInit(){
+      GPUTransfer::resizeCellData();
+      GPUTransfer::fillCellData();
+    }
+
+    void GPUTransfer::resizeCellData(){
       System& system = getSystemRef();
-      CellList localCells = system.storage->getLocalCells();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
-      unsigned int counterParticles = 0;
+      CellList localCells = system.storage->getLocalCells();
+
+      GPUStorage->numberCells = localCells.size();
+      GPUStorage->resizeCellData();
+    }
+
+    void GPUTransfer::fillCellData(){
+      System& system = getSystemRef();
+      StorageGPU* GPUStorage = system.storage->getGPUstorage();
+      CellList localCells = system.storage->getLocalCells();
+      int counterParticles = 0;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         GPUStorage->h_cellOffsets[i] = counterParticles;
         GPUStorage->h_numberCellNeighbors[i] = localCells[i]->neighborCells.size() == 0 ? 0 : 1;
-        for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
-          GPUStorage->h_px[counterParticles] = localCells[i]->particles[j].getPos().at(0);
-          GPUStorage->h_py[counterParticles] = localCells[i]->particles[j].getPos().at(1);
-          GPUStorage->h_pz[counterParticles] = localCells[i]->particles[j].getPos().at(2);
-          counterParticles++;
-        }
+        counterParticles += localCells[i]->particles.size();
       }
-      GPUStorage->h2dParticleVars();
-      //printf("Size localCells: %ld\n", localCells.size());
+      GPUStorage->h2dCellData();
+    }
+    // Cell Data end
+
+    // On decompose, resize Particle Arrays and fill with statics
+    //
+    void GPUTransfer::onDecompose(){
+      GPUTransfer::resizeParticleData();
+      GPUTransfer::fillParticleStatics();
     }
 
-    void GPUTransfer::ParticleStatics(){
-      //printf("ParticleStatics signal\n");
+    void GPUTransfer::resizeParticleData(){
       System& system = getSystemRef();
-      CellList localCells = system.storage->getLocalCells();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
 
-      // Since there was a rebuild, allocate particle data new
       GPUStorage->numberParticles = system.storage->getNLocalParticles();
-      GPUStorage->allocateParticleData(); // Could do resize and allocate only in constructor
+      GPUStorage->resizeParticleData();
+    }
 
-      // Fill Particle static data
+    void GPUTransfer::fillParticleStatics(){
+      System& system = getSystemRef();
+      CellList localCells = system.storage->getLocalCells();
+      StorageGPU* GPUStorage = system.storage->getGPUstorage();   
+
       unsigned int counterParticles = 0;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
@@ -103,11 +122,46 @@ namespace espressopp {
       }
       GPUStorage->h2dParticleStatics();
     }
+    // On decompose end
 
-    void GPUTransfer::ParticleForces(){
-      // printf("Signal aftCalcF\n");
-      //GPUStorage->freeParticleVars();
+    void GPUTransfer::fillParticleVars(){
+      System& system = getSystemRef();
+      CellList localCells = system.storage->getLocalCells();
+      StorageGPU* GPUStorage = system.storage->getGPUstorage();
+
+      unsigned int counterParticles = 0;
+
+      for(unsigned int i = 0; i < localCells.size(); ++i) {
+        for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
+          GPUStorage->h_px[counterParticles] = localCells[i]->particles[j].getPos().at(0);
+          GPUStorage->h_py[counterParticles] = localCells[i]->particles[j].getPos().at(1);
+          GPUStorage->h_pz[counterParticles] = localCells[i]->particles[j].getPos().at(2);
+          counterParticles++;
+        }
+      }
+      GPUStorage->h2dParticleVars();
     }
+
+    void GPUTransfer::getParticleForces(){
+      System& system = getSystemRef();
+      StorageGPU* GPUStorage = system.storage->getGPUstorage();
+      CellList localCells = system.storage->getLocalCells();
+
+      GPUStorage->d2hParticleForces();
+      
+      unsigned int counterParticles = 0;
+      
+
+      for(unsigned int i = 0; i < localCells.size(); ++i) {
+        for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
+          Real3D force3D(GPUStorage->h_fx[counterParticles], GPUStorage->h_fy[counterParticles], GPUStorage->h_fz[counterParticles]);
+          Particle &p = localCells[i]->particles[j];
+          p.force() += force3D;
+        }
+      }
+    }
+
+
 
     /****************************************************
     ** REGISTRATION WITH PYTHON

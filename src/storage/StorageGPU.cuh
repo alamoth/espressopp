@@ -2,7 +2,7 @@
 #define __STORAGE_GPU_CUH
 
 
-void gpu_allocateParticleData(  int N, 
+void gpu_resizeParticleData(  int N, 
                                 double **d_px, 
                                 double **d_py, 
                                 double **d_pz, 
@@ -13,7 +13,7 @@ void gpu_allocateParticleData(  int N,
                                 double **d_fy, 
                                 double **d_fz);
 
-void gpu_allocateCellData(  int N,
+void gpu_resizeCellData(  int N,
                             int **d_cellOffsets,
                             int **d_numberCellNeighbors);
 
@@ -40,4 +40,10 @@ void gpu_d2hParticleForces( int N,
                             double *h_fy,
                             double **d_fz,
                             double *h_fz);
+
+void gpu_h2dCellData(   int M, 
+                        int **d_cellOffsets, 
+                        int **d_numberCellNeighbors, 
+                        int *h_cellOffsets, 
+                        int *h_numberCellNeighbors);                            
 #endif                            

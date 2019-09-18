@@ -30,6 +30,7 @@
 #include "storage/Storage.hpp"
 #include "iterator/CellListIterator.hpp"
 #include "esutil/Array2D.hpp"
+#include "CellListAllParticlesInteractionTemplateGPU.cuh"
 
 #define CUERR { \
     cudaError_t cudaerr; \
@@ -51,7 +52,6 @@ namespace espressopp {
           potentialArray    = esutil::Array2D<Potential, esutil::enlarge>(0, 0, Potential());
           ntypes = 0;
         }
-
       
       void
       setPotential(int type1, int type2, const Potential &potential) {
@@ -64,13 +64,7 @@ namespace espressopp {
            LOG4ESPP_INFO(_Potential::theLogger, "automatically added the same potential for type1=" << type2 << " type2=" << type1);
         }
 
-        printf("Sizeof potential %ld\n", sizeof(potential));
-        cudaMalloc((void**)&d_potential, sizeof(potential)); CUERR
-        cudaMemcpy(d_potential, &potential, sizeof(potential), cudaMemcpyHostToDevice); CUERR
-        //cudaMalloc((void **)&d_potentialArray, sizeof(potentialArray)); CUERR
-        //cudaMallocManaged(&d_potentialArray, sizeof(potentialArray)); CUERR
-        //printf("SIzeof poten: %ld\n", sizeof(potentialArray));CUERR
-        //cudaMemcpy(d_potentialArray, &potentialArray, sizeof(potentialArray), cudaMemcpyHostToDevice); CUERR
+        gpuClass.gpu_addPotential<Potential>(potential, type1, type2);
       }
       // this is used in the innermost force-loop
       Potential &getPotential(int type1, int type2) {
@@ -81,6 +75,12 @@ namespace espressopp {
       shared_ptr<Potential> getPotentialPtr(int type1, int type2) {
     	return  make_shared<Potential>(potentialArray.at(type1, type2));
       }
+
+      void testFunction(){
+        gpuClass.gpu_testGPU();
+      }
+
+
 
 
       virtual void addForces();
@@ -102,9 +102,8 @@ namespace espressopp {
       int ntypes;
       shared_ptr< storage::Storage > storage;
       shared_ptr< Potential > potential;
-      Potential* d_potential;
-      Potential* d_potentialArray;
       esutil::Array2D<Potential, esutil::enlarge> potentialArray;
+      gpu_CellListAllParticlesInteractionTemplateGPU gpuClass;
 
     };
 
@@ -115,11 +114,11 @@ namespace espressopp {
     CellListAllParticlesInteractionTemplateGPU < _Potential >::
     addForces() {
       LOG4ESPP_INFO(theLogger, "add forces computed for all particles in the cell lists");
-      printf("Size of type: %d, sizeof arrayiteself %d\n", sizeof(esutil::Array2D<Potential, esutil::enlarge>), sizeof(potentialArray));
-      printf("Size pot aray: %d, %d\n", potentialArray.size_n(), potentialArray.size_m());
+      //printf("Size of type: %d, sizeof arrayiteself %d\n", sizeof(esutil::Array2D<Potential, esutil::enlarge>), sizeof(potentialArray));
+      //printf("Size pot aray: %d, %d\n", potentialArray.size_n(), potentialArray.size_m());
       // TODO: one kernel call with all potentials
-      
-      potential->_computeForce(storage->getRealCells(), &d_potential);
+      this->testFunction();
+      //potential->_computeForce(storage->getRealCells());
     }
 
     template < typename _Potential >

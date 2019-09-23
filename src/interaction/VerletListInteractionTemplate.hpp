@@ -87,7 +87,6 @@ namespace espressopp {
     	return  make_shared<Potential>(potentialArray.at(type1, type2));
       }
 
-
       virtual void addForces();
       virtual real computeEnergy();
       virtual real computeEnergyDeriv();

@@ -30,7 +30,7 @@
 #include "storage/Storage.hpp"
 #include "iterator/CellListIterator.hpp"
 #include "esutil/Array2D.hpp"
-#include "CellListAllParticlesInteractionTemplateGPU.cuh"
+//#include "CellListAllParticlesInteractionTemplateGPU.cuh"
 
 #define CUERR { \
     cudaError_t cudaerr; \
@@ -41,10 +41,12 @@
 
 namespace espressopp {
   namespace interaction {
-    template < typename _Potential >
+
+    template < typename _Potential, typename _dPotential >
     class CellListAllParticlesInteractionTemplateGPU: public Interaction {
     protected:
       typedef _Potential Potential;
+      typedef _dPotential dPotential;
     public:
       CellListAllParticlesInteractionTemplateGPU
       (shared_ptr < storage::Storage > _storage)
@@ -64,7 +66,12 @@ namespace espressopp {
            LOG4ESPP_INFO(_Potential::theLogger, "automatically added the same potential for type1=" << type2 << " type2=" << type1);
         }
 
-        gpuClass.gpu_addPotential<Potential>(potential, type1, type2);
+        cudaMalloc(&d_potentials, sizeof(Potential)); CUERR
+        cudaMemcpy(d_potentials, &potential, sizeof(Potential), cudaMemcpyHostToDevice); CUERR
+        //gpuTest<Potential>(d_potentials);
+        //gpuClass.testF();
+        //gpuClass.gpuTest<Potential>(d_potentials);
+        //gpu_addPotential(potential, type1, type2);
       }
       // this is used in the innermost force-loop
       Potential &getPotential(int type1, int type2) {
@@ -77,12 +84,11 @@ namespace espressopp {
       }
 
       void testFunction(){
-        gpuClass.gpu_testGPU();
+        //gpuClass.gpu_testGPU();
       }
 
 
-
-
+      //virtual void testFF();
       virtual void addForces();
       virtual real computeEnergy();
       virtual real computeEnergyDeriv();
@@ -103,27 +109,28 @@ namespace espressopp {
       shared_ptr< storage::Storage > storage;
       shared_ptr< Potential > potential;
       esutil::Array2D<Potential, esutil::enlarge> potentialArray;
-      gpu_CellListAllParticlesInteractionTemplateGPU gpuClass;
+      //gpu_CellListAllParticlesInteractionTemplateGPU<Potential> *gpuClass;
+      dPotential *d_potentials;
+
 
     };
 
     //////////////////////////////////////////////////
     // INLINE IMPLEMENTATION
     //////////////////////////////////////////////////
-    template < typename _Potential > inline void
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    template < typename _Potential, typename _dPotential > inline void
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     addForces() {
       LOG4ESPP_INFO(theLogger, "add forces computed for all particles in the cell lists");
       //printf("Size of type: %d, sizeof arrayiteself %d\n", sizeof(esutil::Array2D<Potential, esutil::enlarge>), sizeof(potentialArray));
       //printf("Size pot aray: %d, %d\n", potentialArray.size_n(), potentialArray.size_m());
       // TODO: one kernel call with all potentials
-      this->testFunction();
-      //potential->_computeForce(storage->getRealCells());
+      //potential->testFF(&getPotential(1,1));
     }
 
-    template < typename _Potential >
+    template < typename _Potential, typename _dPotential >
     inline real
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeEnergy() {
       LOG4ESPP_INFO(theLogger, "compute energy for all particles in cell list");
 
@@ -131,50 +138,50 @@ namespace espressopp {
       return potential->_computeEnergy(storage->getRealCells());
     }
 
-    template < typename _Potential > inline real
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    template < typename _Potential, typename _dPotential > inline real
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeEnergyDeriv() {
       std::cout << "Warning! At the moment computeEnergyDeriv() in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl;
       return 0.0;
     }
 
-    template < typename _Potential > inline real
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    template < typename _Potential, typename _dPotential > inline real
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeEnergyAA() {
       std::cout << "Warning! At the moment computeEnergyAA() in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl;
       return 0.0;
     }
 
-    template < typename _Potential > inline real
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    template < typename _Potential, typename _dPotential > inline real
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeEnergyAA(int atomtype) {
       std::cout << "Warning! At the moment computeEnergyAA(int atomtype) in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl;
       return 0.0;
     }
 
-    template < typename _Potential > inline real
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    template < typename _Potential, typename _dPotential > inline real
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeEnergyCG() {
       std::cout << "Warning! At the moment computeEnergyCG() in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl;
       return 0.0;
     }
 
-    template < typename _Potential > inline real
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    template < typename _Potential, typename _dPotential > inline real
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeEnergyCG(int atomtype) {
       std::cout << "Warning! At the moment computeEnergyCG(int atomtype) in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl;
       return 0.0;
     }
 
-    template < typename _Potential >
+    template < typename _Potential, typename _dPotential >
     inline void
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeVirialX(std::vector<real> &p_xx_total, int bins) {
         std::cout << "Warning! At the moment computeVirialX in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl << "Therefore, the corresponding interactions won't be included in calculation." << std::endl;
     }
 
-    template < typename _Potential > inline real
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    template < typename _Potential, typename _dPotential > inline real
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeVirial() {
       LOG4ESPP_INFO(theLogger, "computed virial for all particles in the cell lists");
 
@@ -182,8 +189,8 @@ namespace espressopp {
       return potential -> _computeVirial(storage->getRealCells());
     }
 
-    template < typename _Potential > inline void
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    template < typename _Potential, typename _dPotential > inline void
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeVirialTensor(Tensor& wij) {
       LOG4ESPP_INFO(theLogger, "computed virial tensor for all particles in the cell lists");
 
@@ -192,15 +199,15 @@ namespace espressopp {
     }
 
 
-    template < typename _Potential > inline void
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    template < typename _Potential, typename _dPotential > inline void
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeVirialTensor(Tensor& wij, real z) {
       std::cout<<"Warning! Calculating virial layerwise is not supported for "
               "long range interactions."<<std::endl;
     }
 
-    template < typename _Potential > inline void
-    CellListAllParticlesInteractionTemplateGPU < _Potential >::
+    template < typename _Potential, typename _dPotential > inline void
+    CellListAllParticlesInteractionTemplateGPU < _Potential, _dPotential >::
     computeVirialTensor(Tensor *wij, int n) {
       std::cout<<"Warning! Calculating virial layerwise is not supported for "
               "long range interactions."<<std::endl;

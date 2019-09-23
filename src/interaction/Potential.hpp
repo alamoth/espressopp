@@ -32,6 +32,8 @@
 #include "FixedPairList.hpp"
 #include "FixedTripleList.hpp"
 #include "FixedQuadrupleList.hpp"
+//#include "host_defines.h"
+
 
 namespace espressopp {
   namespace interaction {

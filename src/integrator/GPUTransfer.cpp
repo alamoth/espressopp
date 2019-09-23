@@ -27,6 +27,8 @@
 #include "System.hpp"
 #include "storage/Storage.hpp"
 #include "iterator/CellListIterator.hpp"
+#include <iterator>
+#include <vector>
 
 namespace espressopp {
 
@@ -114,9 +116,10 @@ namespace espressopp {
       unsigned int counterParticles = 0;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
-          GPUStorage->h_type[counterParticles] = localCells[i]->particles[j].getType();
-          GPUStorage->h_mass[counterParticles] = localCells[i]->particles[j].getMass();
-          GPUStorage->h_drift[counterParticles] = localCells[i]->particles[j].getDrift();
+          Particle &p = localCells[i]->particles[j];
+          GPUStorage->h_type[counterParticles] = p.getType();
+          GPUStorage->h_mass[counterParticles] = p.getMass();
+          GPUStorage->h_drift[counterParticles] = p.getDrift();
           counterParticles++;
         }
       }
@@ -133,9 +136,11 @@ namespace espressopp {
 
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
-          GPUStorage->h_px[counterParticles] = localCells[i]->particles[j].getPos().at(0);
-          GPUStorage->h_py[counterParticles] = localCells[i]->particles[j].getPos().at(1);
-          GPUStorage->h_pz[counterParticles] = localCells[i]->particles[j].getPos().at(2);
+          Real3D pos = localCells[i]->particles[j].getPos();
+          GPUStorage->h_pos[counterParticles] = make_double3(pos.at(0), pos.at(1), pos.at(2)); 
+          //GPUStorage->h_px[counterParticles] = pos.at(0);
+          //GPUStorage->h_py[counterParticles] = pos.at(1);
+          //GPUStorage->h_pz[counterParticles] = pos.at(2);
           counterParticles++;
         }
       }
@@ -154,9 +159,11 @@ namespace espressopp {
 
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
-          Real3D force3D(GPUStorage->h_fx[counterParticles], GPUStorage->h_fy[counterParticles], GPUStorage->h_fz[counterParticles]);
+          double3 force3 = GPUStorage->h_force[counterParticles];
+          Real3D force3D(force3.x, force3.y, force3.z);
           Particle &p = localCells[i]->particles[j];
           p.force() += force3D;
+          //printf("Force copies back: %f, %f, %f\n", force3.x, force3.y, force3.z);
         }
       }
     }

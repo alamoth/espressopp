@@ -244,13 +244,27 @@ verletlist.disconnect()
 # the verlet radius is automatically increased by system.skin (see system setup)
 verletlist  = espressopp.VerletList(system, r_cutoff)
 # define a Lennard-Jones interaction that uses a verlet list 
-interaction = espressopp.interaction.VerletListLennardJones(verletlist)
+
+#interaction = espressopp.interaction.VerletListLennardJones(verletlist)
+#interaction = espressopp.interaction.VerletListZero(verletlist)
+interaction = espressopp.interaction.CellListLennardJonesGPU(system.storage)
+
 # use a Lennard-Jones potential between 2 particles of type 0 
 # the potential is automatically shifted so that U(r=cutoff) = 0.0
 # if the potential should not be shifted set shift=0.0
 potential   = interaction.setPotential(type1=0, type2=0,
-                                       potential=espressopp.interaction.LennardJones(
-                                       epsilon=epsilon, sigma=sigma, cutoff=r_cutoff, shift=0.0))
+                                        potential=espressopp.interaction.LennardJonesGPU(
+                                          epsilon=epsilon, sigma=sigma, cutoff=r_cutoff, shift=0.0))
+
+potential = interaction.setPotential(type1=1, type2=1, potential=espressopp.interaction.LennardJonesGPU(
+                                          epsilon=2.0, sigma=2.0, cutoff=r_cutoff, shift=2.0))                                          
+
+#potential = interaction.setPotential(type1=0, type2=0, potential=espressopp.interaction.Zero())                                          
+#potential   = interaction.setPotential(type1=0, type2=0,
+#                                       potential=espressopp.interaction.LennardJones(
+#                                       epsilon=epsilon, sigma=sigma, cutoff=r_cutoff, shift=0.0))
+
+                                  
 
 ########################################################################
 # 8. running the equilibration loop                                    #

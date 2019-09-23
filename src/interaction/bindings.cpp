@@ -24,6 +24,7 @@
 #include "bindings.hpp"
 #include "Zero.hpp"
 #include "LennardJones.hpp"
+#include "LennardJonesGPU.hpp"
 #include "LennardJonesAutoBonds.hpp"
 #include "LennardJonesCapped.hpp"
 #include "LennardJonesEnergyCapped.hpp"
@@ -92,6 +93,7 @@ namespace espressopp {
       SingleParticlePotential::registerPython();
       Zero::registerPython();
       LennardJones::registerPython();
+      LennardJonesGPU::registerPython();
       LJcos::registerPython();
       LennardJonesAutoBonds::registerPython();
       LennardJonesCapped::registerPython();

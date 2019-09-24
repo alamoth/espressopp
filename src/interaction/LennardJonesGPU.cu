@@ -24,12 +24,36 @@
 
 
 #include <cuda_runtime.h>
-#include "LennardJonesGPU.hpp"
 #include <stdio.h>
-
+#include "LennardJonesGPU.cuh"
 
 using namespace std;
 
+
+
+namespace espressopp {
+  namespace interaction {
+/*
+    __global__ void 
+    testKernel(double3 *pos){
+      printf("d_pos[0].x: %f, y: %f, z: %f\n", pos[0].x, pos[0].y, pos[0].z);
+    }
+
+
+    void LJGPUdriver( int nPart,
+                      int nCells,
+                      double3* pos, 
+                      double3* force,
+                      double* mass,
+                      double* drift,
+                      int* type,
+                      int* cellOff,
+                      int* numCellN,
+                      d_LennardJonesGPU* gpuPots){
+      testKernel<<<1,1>>>(pos);
+    }
+  }
+}
 
 namespace espressopp {
   namespace interaction {
@@ -37,7 +61,7 @@ namespace espressopp {
     void d_LennardJonesGPU::testFF(d_LennardJonesGPU* potential){
       printf("bna %f\n", potential->getSigma());
     }
+    */
   }
 }
-
 

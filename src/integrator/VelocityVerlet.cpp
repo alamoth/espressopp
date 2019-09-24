@@ -325,7 +325,6 @@ namespace espressopp {
 
       System& sys = getSystemRef();
       const InteractionList& srIL = sys.shortRangeInteractions;
-      printf("Size: %d\n", srIL.size());
       for (size_t i = 0; i < srIL.size(); i++) {
 	    LOG4ESPP_INFO(theLogger, "compute forces for srIL " << i << " of " << srIL.size());
         real time;

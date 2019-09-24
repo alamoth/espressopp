@@ -21,15 +21,11 @@
 */
 
 // ESPP_CLASS
-#ifdef _INTERACTION_LENNARDJONESGPU_CUH
-//#define _INTERACTION_LENNARDJONESGPU_CUH
 
+#ifndef LennardJonesGPU_CUH
+#define LennardJonesGPU_CUH
 #include <cmath>
 
-#include "storage/Storage.hpp"
-
-//#include "CellListAllParticlesInteractionTemplateGPU.hpp"
-#include "Potential.hpp"
 
 #include <cuda_runtime.h>
 
@@ -40,50 +36,30 @@ using namespace std;
 namespace espressopp {
   namespace interaction {
 
-    
-    class d_LennardJonesGPU : public PotentialTemplate< d_LennardJonesGPU > {
+    class d_LennardJonesGPU {
     private:
 
-      real epsilon;
-      real sigma;
-      real ff1, ff2;
-      real ef1, ef2;
+      double epsilon;
+      double sigma;
+      double ff1, ff2;
+      double ef1, ef2;
 
       
     public:
-      static void registerPython();
-
       d_LennardJonesGPU()
 	      : epsilon(0.0), sigma(0.0) {
-          setShift(0.0);
-          setCutoff(infinity);
           preset();
       }
 
-      d_LennardJonesGPU(real _epsilon, real _sigma, 
-		    real _cutoff, real _shift) 
-	        : epsilon(_epsilon), sigma(_sigma) {
-          setShift(_shift);
-          setCutoff(_cutoff);
+      d_LennardJonesGPU(double _epsilon, double _sigma) {
           preset();
-      }
-
-      d_LennardJonesGPU(real _epsilon, real _sigma, 
-		    real _cutoff)
-	        : epsilon(_epsilon), sigma(_sigma) {	
-          autoShift = false;
-          setCutoff(_cutoff);
-          preset();
-          setAutoShift(); 
       }
       
-      virtual ~d_LennardJonesGPU(){};
-
-      void testFF(d_LennardJonesGPU* potential);
+      ~d_LennardJonesGPU(){};
 
       void preset() {
-        real sig2 = sigma * sigma;
-        real sig6 = sig2 * sig2 * sig2;
+        double sig2 = sigma * sigma;
+        double sig6 = sig2 * sig2 * sig2;
         ff1 = 48.0 * epsilon * sig6 * sig6;
         ff2 = 24.0 * epsilon * sig6;
         ef1 =  4.0 * epsilon * sig6 * sig6;
@@ -91,60 +67,47 @@ namespace espressopp {
       }
 
       // Setter and getter
-      void setEpsilon(real _epsilon) {
+      void setEpsilon(double _epsilon) {
         epsilon = _epsilon;
-        LOG4ESPP_INFO(theLogger, "epsilon=" << epsilon);
-        updateAutoShift();
         preset();
       }
       
-      real getEpsilon() const { return epsilon; }
+      double getEpsilon() const { return epsilon; }
 
-      void setSigma(real _sigma) { 
+      void setSigma(double _sigma) { 
         sigma = _sigma; 
-        LOG4ESPP_INFO(theLogger, "sigma=" << sigma);
-        updateAutoShift();
         preset();
       }
-      real getSigma() const { return sigma; }
+      double getSigma() const { return sigma; }
       
-      bool _computeForce(CellList realcells){
-        // TOdo: GPU
-        // printf("SIzeofLennardJones: %d\n", sizeof(potentialArray));
-        //gpu_computeForce(d_potential);
+      bool _computeForceRaw(double3& force, const double3& dist, double distSqr){
+
+        double frac2 = 1.0 / distSqr;
+        double frac6 = frac2 * frac2 * frac2;
+        double ffactor = frac6 * (ff1 * frac6 - ff2) * frac2;
+        //force = dist * ffactor;
 
         return true;
       }
 
-      real _computeEnergy(CellList realcells){
+      double _computeEnergySqrRaw(double distSqr){
         
         
         return 0.0;
       }
 
-
-      real _computeVirial(CellList realcells){
-        
-          return 0.0;
-      }
-      
-
-      void _computeVirialTensor(CellList realcells){
-
-      }
-      
-      real _computeEnergySqrRaw(real distSqr) const {
-        
-        return 0.0;
-      }
-      bool _computeForceRaw(Real3D& force, const Real3D& dist, real distSqr) const {
-        
-        return false;
-      }
-      
-    protected:
-      
     };
+
+    void LJGPUdriver( int nPart,
+                      int nCells,
+                      double3* pos, 
+                      double3* force,
+                      double* mass,
+                      double* drift,
+                      int* type,
+                      int* cellOff,
+                      int* numCellN,
+                      d_LennardJonesGPU* gpuPots);
   }
 }
 

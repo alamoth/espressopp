@@ -29,7 +29,6 @@
 
 #include <cuda_runtime.h>
 
-
 using namespace std;
 
 
@@ -37,7 +36,7 @@ namespace espressopp {
   namespace interaction {
 
     class d_LennardJonesGPU {
-    private:
+    public:
 
       double epsilon;
       double sigma;
@@ -45,7 +44,7 @@ namespace espressopp {
       double ef1, ef2;
 
       
-    public:
+    
       d_LennardJonesGPU()
 	      : epsilon(0.0), sigma(0.0) {
           preset();
@@ -74,7 +73,7 @@ namespace espressopp {
       
       double getEpsilon() const { return epsilon; }
 
-      void setSigma(double _sigma) { 
+      __host__ __device__ void setSigma(double _sigma) { 
         sigma = _sigma; 
         preset();
       }

@@ -30,7 +30,7 @@
 #include "storage/Storage.hpp"
 #include "iterator/CellListIterator.hpp"
 #include "esutil/Array2D.hpp"
-#include "LennardJonesGPU.cuh"
+//#include "LennardJonesGPU.cuh"
 
 #define CUERR { \
     cudaError_t cudaerr; \
@@ -56,7 +56,7 @@ namespace espressopp {
         }
       
       void
-      setPotential(int type1, int type2, const Potential &potential) {
+      setPotential(int type1, int type2, Potential &potential) {
         // typeX+1 because i<ntypes
         ntypes = std::max(ntypes, std::max(type1+1, type2+1));
         potentialArray.at(type1, type2) = potential;
@@ -66,10 +66,19 @@ namespace espressopp {
            LOG4ESPP_INFO(_Potential::theLogger, "automatically added the same potential for type1=" << type2 << " type2=" << type1);
         }
 
-        if(d_potentials != NULL) cudaFree(d_potentials);
+        potential.copyToGPUImplt(&h_potential);
+        
+        if(d_potentials != NULL){
+           cudaFree(d_potentials); CUERR
+        }
+        
         int offset = potentialArray.size_x() * type2 + type1;
-        cudaMalloc(&d_potentials, sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y());
-        //cudaMemcpy(d_potentials + offset, 
+        printf("Offset: %d, size array: %d x %d, size Allocated space: %d\n", offset, potentialArray.size_x(), potentialArray.size_y()
+         ,sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y());
+        cudaMalloc(&d_potentials, sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y()); CUERR
+        
+        cudaMemcpy(&d_potentials[offset], &h_potential, sizeof(dPotential), cudaMemcpyHostToDevice); CUERR
+
         //cudaMalloc(&d_potentials, sizeof(Potential)); CUERR
         //cudaMemcpy(d_potentials, &potential, sizeof(Potential), cudaMemcpyHostToDevice); CUERR
         //gpuTest<Potential>(d_potentials);
@@ -113,7 +122,8 @@ namespace espressopp {
       shared_ptr< storage::Storage > storage;
       shared_ptr< Potential > potential;
       esutil::Array2D<Potential, esutil::enlarge> potentialArray;
-      dPotential* d_potentials;
+      dPotential h_potential;
+      dPotential* d_potentials = 0;
       //gpu_CellListAllParticlesInteractionTemplateGPU<Potential> *gpuClass;
       //dPotential *d_potentials;
 

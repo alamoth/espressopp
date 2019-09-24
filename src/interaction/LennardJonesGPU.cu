@@ -33,10 +33,14 @@ using namespace std;
 
 namespace espressopp {
   namespace interaction {
-/*
+
     __global__ void 
-    testKernel(double3 *pos){
+    testKernel(double3 *pos, d_LennardJonesGPU* gpuPots){
       printf("d_pos[0].x: %f, y: %f, z: %f\n", pos[0].x, pos[0].y, pos[0].z);
+      printf("Potential sigma: %f\n", gpuPots[0].sigma);
+      printf("Potential sigma: %f\n", gpuPots[1].sigma);
+      printf("Potential sigma: %f\n", gpuPots[2].sigma);
+      printf("Potential sigma: %f\n", gpuPots[3].sigma);
     }
 
 
@@ -50,18 +54,8 @@ namespace espressopp {
                       int* cellOff,
                       int* numCellN,
                       d_LennardJonesGPU* gpuPots){
-      testKernel<<<1,1>>>(pos);
+      
+      testKernel<<<1,1>>>(pos, gpuPots);
     }
   }
 }
-
-namespace espressopp {
-  namespace interaction {
-
-    void d_LennardJonesGPU::testFF(d_LennardJonesGPU* potential){
-      printf("bna %f\n", potential->getSigma());
-    }
-    */
-  }
-}
-

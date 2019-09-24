@@ -24,10 +24,7 @@
 #include <boost/signals2.hpp>
 #include "CellListAllParticlesInteractionTemplateGPU.hpp"
 #include "LennardJonesGPU.hpp"
-
 #include "LennardJonesGPU.cuh"
-
-//#include "LennardJonesCapped.hpp"
 
 namespace espressopp {
   namespace interaction {

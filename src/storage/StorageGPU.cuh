@@ -4,16 +4,10 @@
 
 void gpu_resizeParticleData(    int N, 
                                 double3 **d_pos,
-                                //double **d_px, 
-                                //double **d_py, 
-                                //double **d_pz, 
                                 int **d_type, 
                                 double **d_mass, 
                                 double **d_drift,
                                 double3 **d_force
-                                //double **d_fx, 
-                                //double **d_fy, 
-                                //double **d_fz
                             );
 
 
@@ -32,12 +26,6 @@ void gpu_resizeCellData(  int N,
 void gpu_h2dParticleVars(   int N,
                             double3 *h_pos,
                             double3 **d_pos
-                            //double *h_px,
-                            //double **d_px,
-                            //double *h_py,
-                            //double **d_py,
-                            //double *h_pz,
-                            //double **d_pz
                         );
 
 void gpu_h2dParticleStatics(    int N,
@@ -51,12 +39,6 @@ void gpu_h2dParticleStatics(    int N,
 void gpu_d2hParticleForces( int N,
                             double3 *h_force,
                             double3 **d_force
-                            //double **d_fx,
-                            //double *h_fx,
-                            //double **d_fy,
-                            //double *h_fy,
-                            //double **d_fz,
-                            //double *h_fz
                         );
                            
 #endif                            

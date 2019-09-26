@@ -35,15 +35,31 @@ namespace espressopp {
   namespace interaction {
 
     __global__ void 
-    testKernel(double3 *pos, d_LennardJonesGPU* gpuPots){
-      printf("d_pos[0].x: %f, y: %f, z: %f\n", pos[0].x, pos[0].y, pos[0].z);
-      printf("Potential sigma: %f\n", gpuPots[0].sigma);
-      printf("Potential sigma: %f\n", gpuPots[1].sigma);
-      printf("Potential sigma: %f\n", gpuPots[2].sigma);
-      printf("Potential sigma: %f\n", gpuPots[3].sigma);
+    testKernel( int nPart,
+                int nCells,
+                double3* pos,
+                double3* force,
+                double* mass,
+                double* drift,
+                int* type,
+                int* cellOff,
+                int* numCellN, 
+                d_LennardJonesGPU* gpuPots){
+      int idx = blockIdx.x*blockDim.x + threadIdx.x;
+      
+      if(idx < 1){
+        printf("Cutoff: %f\n", gpuPots[0].cutoff);
+        printf("#Cells: %d, cellOff[%d]: %d, numCell: %d\n", nCells, idx, cellOff[idx], numCellN[idx]);
+      }
+
+      if(idx < nPart){
+        //printf("PID: %d, type: %d, mass: %f, drift: %f\n", idx, type[idx], mass[idx], drift[idx]);
+        //printf("d_pos[0].x: %f, y: %f, z: %f\n", pos[0].x, pos[0].y, pos[0].z);
+      }
+      
     }
 
-
+/*
     void LJGPUdriver( int nPart,
                       int nCells,
                       double3* pos, 
@@ -54,8 +70,21 @@ namespace espressopp {
                       int* cellOff,
                       int* numCellN,
                       d_LennardJonesGPU* gpuPots){
-      
-      testKernel<<<1,1>>>(pos, gpuPots);
+*/
+  void LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots){
+    //printf("cutof: %f\n", gpuPots[0].sigma);
+    testKernel<<<1,100>>>(  gpuStorage->numberParticles, 
+                            gpuStorage->numberCells, 
+                            gpuStorage->d_pos,
+                            gpuStorage->d_force,
+                            gpuStorage->d_mass,
+                            gpuStorage->d_drift,
+                            gpuStorage->d_type,
+                            gpuStorage->d_cellOffsets,
+                            gpuStorage->d_numberCellNeighbors,
+                            gpuPots);
+
     }
   }
 }
+

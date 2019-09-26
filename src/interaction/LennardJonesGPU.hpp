@@ -80,6 +80,7 @@ namespace espressopp {
       void copyToGPUImplt(d_LennardJonesGPU* h_potential){
         h_potential->setEpsilon(epsilon);
         h_potential->setSigma(sigma);
+        h_potential->setCutoff(cutoff);
       }
 
       void preset() {
@@ -115,7 +116,7 @@ namespace espressopp {
         //gpu_computeForce(d_potential);
         //double3 testPos = gpuStorage->h_pos[0];
         //printf("h_pos[0].x: %f, y: %f, z: %f\n", testPos.x, testPos.y, testPos.z);
-        LJGPUdriver(  gpuStorage->numberParticles, 
+        /*LJGPUdriver(  gpuStorage->numberParticles, 
                       gpuStorage->numberCells, 
                       gpuStorage->d_pos,
                       gpuStorage->d_force,
@@ -124,8 +125,9 @@ namespace espressopp {
                       gpuStorage->d_type,
                       gpuStorage->d_cellOffsets,
                       gpuStorage->d_numberCellNeighbors,
-                      gpuPots
-                      );
+                      gpuPots,
+                      ); */
+        LJGPUdriver(gpuStorage, gpuPots);
                       
         return true;
       }

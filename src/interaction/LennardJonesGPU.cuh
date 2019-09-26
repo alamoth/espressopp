@@ -28,7 +28,7 @@
 
 
 #include <cuda_runtime.h>
-
+#include "storage/StorageGPU.hpp"
 using namespace std;
 
 
@@ -42,9 +42,10 @@ namespace espressopp {
       double sigma;
       double ff1, ff2;
       double ef1, ef2;
+      double cutoff;
 
       
-    
+    //public:
       d_LennardJonesGPU()
 	      : epsilon(0.0), sigma(0.0) {
           preset();
@@ -56,6 +57,7 @@ namespace espressopp {
       
       ~d_LennardJonesGPU(){};
 
+      //__device__ __host__ 
       void preset() {
         double sig2 = sigma * sigma;
         double sig6 = sig2 * sig2 * sig2;
@@ -70,15 +72,26 @@ namespace espressopp {
         epsilon = _epsilon;
         preset();
       }
-      
+
+      //__device__ __host__ 
       double getEpsilon() const { return epsilon; }
 
-      __host__ __device__ void setSigma(double _sigma) { 
+      void setSigma(double _sigma) { 
         sigma = _sigma; 
         preset();
       }
+
+      //__device__ __host__ 
       double getSigma() const { return sigma; }
       
+      void setCutoff(double _cutoff) {
+        cutoff = _cutoff;
+        preset();
+      }
+
+      double getCutoff() const { return cutoff; }
+
+      //__device__ __host__ 
       bool _computeForceRaw(double3& force, const double3& dist, double distSqr){
 
         double frac2 = 1.0 / distSqr;
@@ -89,6 +102,7 @@ namespace espressopp {
         return true;
       }
 
+      //__device__ __host__ 
       double _computeEnergySqrRaw(double distSqr){
         
         
@@ -96,7 +110,7 @@ namespace espressopp {
       }
 
     };
-
+  /*
     void LJGPUdriver( int nPart,
                       int nCells,
                       double3* pos, 
@@ -107,6 +121,8 @@ namespace espressopp {
                       int* cellOff,
                       int* numCellN,
                       d_LennardJonesGPU* gpuPots);
+                      */
+    void LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots);
   }
 }
 

@@ -140,7 +140,7 @@ namespace espressopp {
     VerletListInteractionTemplate < _Potential >::
     computeEnergy() {
       LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up potential energies");
-
+      //printf("Energy???\n");
       real e = 0.0;
       real es = 0.0;
       for (PairList::Iterator it(verletList->getPairs()); it.isValid(); ++it) {

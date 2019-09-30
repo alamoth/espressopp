@@ -110,34 +110,31 @@ namespace espressopp {
       }
       real getSigma() const { return sigma; }
       
-      bool _computeForce(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots){
-        // TOdo: GPU
-        // printf("SIzeofLennardJones: %d\n", sizeof(potentialArray));
-        //gpu_computeForce(d_potential);
-        //double3 testPos = gpuStorage->h_pos[0];
-        //printf("h_pos[0].x: %f, y: %f, z: %f\n", testPos.x, testPos.y, testPos.z);
-        /*LJGPUdriver(  gpuStorage->numberParticles, 
-                      gpuStorage->numberCells, 
-                      gpuStorage->d_pos,
-                      gpuStorage->d_force,
-                      gpuStorage->d_mass,
-                      gpuStorage->d_drift,
-                      gpuStorage->d_type,
-                      gpuStorage->d_cellOffsets,
-                      gpuStorage->d_numberCellNeighbors,
-                      gpuPots,
-                      ); */
-        LJGPUdriver(gpuStorage, gpuPots);
-                      
+      bool _computeForceGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots){
+        LJGPUdriver(gpuStorage, gpuPots, 0);
         return true;
       }
 
-      real _computeEnergy(CellList realcells){
-        
-        
-        return 0.0;
-      }
+      bool _computeForceRaw(Real3D& force,
+                      const Real3D& dist,
+                      real distSqr) const {
+        real frac2 = 1.0 / distSqr;
+        real frac6 = frac2 * frac2 * frac2;
+        real ffactor = frac6 * (ff1 * frac6 - ff2) * frac2;
+        force = dist * ffactor;
+        return true;
+                      }
 
+      real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots){
+        return LJGPUdriver(gpuStorage, gpuPots, 1);
+      }
+      
+      real _computeEnergySqrRaw(real distSqr) const {
+        real frac2 = sigma*sigma / distSqr;
+        real frac6 = frac2 * frac2 * frac2;
+        real energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
+        return energy;
+      }
 
       real _computeVirial(CellList realcells){
         
@@ -148,15 +145,7 @@ namespace espressopp {
       void _computeVirialTensor(CellList realcells){
 
       }
-      
-      real _computeEnergySqrRaw(real distSqr) const {
-        
-        return 0.0;
-      }
-      bool _computeForceRaw(Real3D& force, const Real3D& dist, real distSqr) const {
-        
-        return false;
-      }
+    
       
     protected:
       

@@ -26,6 +26,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include "LennardJonesGPU.cuh"
+#include <math.h>
 
 using namespace std;
 
@@ -37,6 +38,7 @@ namespace espressopp {
     __global__ void 
     testKernel( int nPart,
                 int nCells,
+                int* id,
                 double3* pos,
                 double3* force,
                 double* mass,
@@ -44,19 +46,73 @@ namespace espressopp {
                 int* type,
                 int* cellOff,
                 int* numCellN, 
-                d_LennardJonesGPU* gpuPots){
+                bool* ghost,
+                double* energy,
+                d_LennardJonesGPU* gpuPots,
+                int mode){
       int idx = blockIdx.x*blockDim.x + threadIdx.x;
-      
-      if(idx < 1){
-        printf("Cutoff: %f\n", gpuPots[0].cutoff);
-        printf("#Cells: %d, cellOff[%d]: %d, numCell: %d\n", nCells, idx, cellOff[idx], numCellN[idx]);
+
+      __shared__ double cutoff;
+      __shared__ int calcMode;
+
+      if(idx == 0){
+        cutoff = gpuPots[0].getCutoff();
+        calcMode = mode;
       }
+      __syncthreads();
+
+      double3 p_pos = pos[idx];
+      double p_mass = mass[idx];
+      double p_drift = drift[idx];
+      int p_id = id[idx];
+      int p_type = type[idx];
+      int p_ghost = ghost[idx] ? 0 : 1;
+      double3 p_force = make_double3(0.0,0.0,0.0);
+      double3 p_dist;
+      double distSqr;
+      double p_energy = 0;
 
       if(idx < nPart){
-        //printf("PID: %d, type: %d, mass: %f, drift: %f\n", idx, type[idx], mass[idx], drift[idx]);
-        //printf("d_pos[0].x: %f, y: %f, z: %f\n", pos[0].x, pos[0].y, pos[0].z);
+        //printf("Cutoff: %f\n", gpuPots[0].cutoff);
+        //printf("Particle %d, Ghost: %s, pos: x: %f, y: %f, z: %f\n", idx, ghost[idx] ? "true" : "false", pos[idx].x, pos[idx].y, pos[idx].z);
+        for(int i = 0; i < nPart; i++){
+          if(i != idx){
+            distSqr = 0.0;
+            p_dist.x = p_pos.x - pos[i].x;
+            p_dist.y = p_pos.y - pos[i].y;
+            p_dist.z = p_pos.z - pos[i].z;
+            distSqr += p_dist.x * p_dist.x;
+            distSqr += p_dist.y * p_dist.y;
+            distSqr += p_dist.z * p_dist.z;
+            //printf("distSqr: %f, p_dist: x: %f, y: %f, z:%f\n", distSqr, p_dist.x, p_dist.y, p_dist.z);
+            if(distSqr < (cutoff * cutoff)){
+              if(calcMode == 0){
+                gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
+                if(p_ghost == 1){
+                  //printf("-\n");
+                  //printf("ghost? %d\n", p_ghost);
+                  printf("p1: id: %d, x: %f, y: %f, z: %f;  p2: id: %d, x: %f, y: %f, z: %f\n", p_id, p_pos.x,p_pos.y,p_pos.z, id[i], pos[i].x, pos[i].y, pos[i].z);
+                  //printf("id1: %d, id2: %d, force x: %f, y: %f, z: %f\n", p_id, id[i], p_force.x, p_force.y, p_force.z);
+                }
+              }
+              if(calcMode == 1){
+                p_energy += gpuPots[0]._computeEnergySqrRaw(distSqr);
+              }
+            }
+          }
+        }
+        // printf("Force x: %f, y: %f, z: %f\n", p_force.x, p_force.y, p_force.z);
+        if(calcMode == 0){
+          force[idx].x = p_ghost * p_force.x;
+          force[idx].y = p_ghost * p_force.y;
+          force[idx].z = p_ghost * p_force.z;
+        }
+
+        if(calcMode == 1){
+          energy[idx] = p_energy;
+          //printf("Energy p %d: %f\n", idx, energy[idx]);
+        }
       }
-      
     }
 
 /*
@@ -71,10 +127,20 @@ namespace espressopp {
                       int* numCellN,
                       d_LennardJonesGPU* gpuPots){
 */
-  void LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots){
+  double LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
     //printf("cutof: %f\n", gpuPots[0].sigma);
-    testKernel<<<1,100>>>(  gpuStorage->numberParticles, 
-                            gpuStorage->numberCells, 
+    int numBlocks = gpuStorage->numberLocalParticles / 512 + 1;
+    double *h_energy; 
+    double *d_energy;
+    double totalEnergy = 0;
+
+    h_energy = new double[gpuStorage->numberLocalParticles];
+    cudaMalloc(&d_energy, sizeof(double) * gpuStorage->numberLocalParticles);
+
+    testKernel<<<numBlocks, 512>>>(
+                            gpuStorage->numberLocalParticles, 
+                            gpuStorage->numberLocalCells, 
+                            gpuStorage->d_id,
                             gpuStorage->d_pos,
                             gpuStorage->d_force,
                             gpuStorage->d_mass,
@@ -82,8 +148,20 @@ namespace espressopp {
                             gpuStorage->d_type,
                             gpuStorage->d_cellOffsets,
                             gpuStorage->d_numberCellNeighbors,
-                            gpuPots);
+                            gpuStorage->d_ghost,
+                            d_energy,
+                            gpuPots,
+                            mode
+                          );
 
+      printf("---\n");
+      if(mode == 1) {
+        cudaMemcpy(h_energy, d_energy, sizeof(double) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost);
+        for (int i = 0; i < gpuStorage->numberLocalParticles; i++){
+          totalEnergy += h_energy[i];
+        }
+      }
+      return totalEnergy / 2;
     }
   }
 }

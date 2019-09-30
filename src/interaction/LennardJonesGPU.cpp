@@ -46,7 +46,8 @@ namespace espressopp {
       ;
 
       class_< CellListLennardJonesGPU, bases< Interaction > >
-        ("interaction_CellListLennardJonesGPU",	init< shared_ptr< storage::Storage > >())
+        ("interaction_CellListLennardJonesGPU",	init< shared_ptr< storage::Storage >, shared_ptr<VerletList> >())
+        .def("getVerletList", &CellListLennardJonesGPU::getVerletList)
         .def("getPotential", &CellListLennardJonesGPU::getPotentialPtr)
         .def("setPotential", &CellListLennardJonesGPU::setPotential);
 	  ;

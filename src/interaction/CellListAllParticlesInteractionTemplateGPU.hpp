@@ -30,6 +30,13 @@
 #include "storage/Storage.hpp"
 #include "iterator/CellListIterator.hpp"
 #include "esutil/Array2D.hpp"
+#include "System.hpp"
+#include "mpi.hpp"
+#include "VerletList.hpp"
+#include "bc/BC.hpp"
+#include "Real3D.hpp"
+#include "Particle.hpp"
+
 //#include "LennardJonesGPU.cuh"
 
 #define CUERR { \
@@ -49,11 +56,23 @@ namespace espressopp {
       typedef _dPotential dPotential;
     public:
       CellListAllParticlesInteractionTemplateGPU
-      (shared_ptr < storage::Storage > _storage)
-        : storage(_storage) {
+      (shared_ptr < storage::Storage > _storage,
+      shared_ptr< VerletList > _verletList)
+        : storage(_storage),
+          verletList(_verletList)
+          {
           potentialArray    = esutil::Array2D<Potential, esutil::enlarge>(0, 0, Potential());
           ntypes = 0;
         }
+      
+      void
+      setVerletList(shared_ptr < VerletList > _verletList) {
+        verletList = _verletList;
+      }
+
+      shared_ptr<VerletList> getVerletList() {
+        return verletList;
+      }
       
       void
       setPotential(int type1, int type2, Potential &potential) {
@@ -76,15 +95,8 @@ namespace espressopp {
         printf("Offset: %d, size array: %d x %d, size Allocated space: %d\n", offset, potentialArray.size_x(), potentialArray.size_y()
          ,sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y());
         cudaMalloc(&d_potentials, sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y()); CUERR
-        
         cudaMemcpy(&d_potentials[offset], &h_potential, sizeof(dPotential), cudaMemcpyHostToDevice); CUERR
 
-        //cudaMalloc(&d_potentials, sizeof(Potential)); CUERR
-        //cudaMemcpy(d_potentials, &potential, sizeof(Potential), cudaMemcpyHostToDevice); CUERR
-        //gpuTest<Potential>(d_potentials);
-        //gpuClass.testF();
-        //gpuClass.gpuTest<Potential>(d_potentials);
-        //gpu_addPotential(potential, type1, type2);
       }
       // this is used in the innermost force-loop
       Potential &getPotential(int type1, int type2) {
@@ -96,12 +108,6 @@ namespace espressopp {
     	return  make_shared<Potential>(potentialArray.at(type1, type2));
       }
 
-      void testFunction(){
-        //gpuClass.gpu_testGPU();
-      }
-
-
-      //virtual void testFF();
       virtual void addForces();
       virtual real computeEnergy();
       virtual real computeEnergyDeriv();
@@ -114,7 +120,7 @@ namespace espressopp {
       virtual void computeVirialTensor(Tensor& wij);
       virtual void computeVirialTensor(Tensor& w, real z);
       virtual void computeVirialTensor(Tensor *w, int n);
-      virtual real getMaxCutoff() { return 0.0; }
+      virtual real getMaxCutoff();
       virtual int bondType() { return Nonbonded; }
 
     protected:
@@ -124,9 +130,7 @@ namespace espressopp {
       esutil::Array2D<Potential, esutil::enlarge> potentialArray;
       dPotential h_potential;
       dPotential* d_potentials = 0;
-      //gpu_CellListAllParticlesInteractionTemplateGPU<Potential> *gpuClass;
-      //dPotential *d_potentials;
-
+      shared_ptr<VerletList> verletList;
 
     };
 
@@ -137,21 +141,22 @@ namespace espressopp {
     CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
     addForces() {
       LOG4ESPP_INFO(theLogger, "add forces computed for all particles in the cell lists");
-      //printf("Size of type: %d, sizeof arrayiteself %d\n", sizeof(esutil::Array2D<Potential, esutil::enlarge>), sizeof(potentialArray));
-      //printf("Size pot aray: %d, %d\n", potentialArray.size_n(), potentialArray.size_m());
-      // TODO: one kernel call with all potentials
-      //potential->testFF(&getPotential(1,1));
-      potential->_computeForce(storage->getGPUstorage(), d_potentials);
+      potential->_computeForceGPU(storage->getGPUstorage(), d_potentials);
     }
 
     template < typename _Potential, typename _dPotential >
     inline real
     CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
     computeEnergy() {
-      LOG4ESPP_INFO(theLogger, "compute energy for all particles in cell list");
-
-      // for the long range interaction the energy is already reduced in _computeEnergy
-      return potential->_computeEnergy(storage->getRealCells());
+      LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up potential energies");
+      real es = 0.0;
+      
+      es = potential->_computeEnergyGPU(storage->getGPUstorage(), d_potentials);
+      // reduce over all CPUs
+      real esum;
+      //boost::mpi::all_reduce(*getVerletList()->getSystem()->comm, es, esum, std::plus<real>());
+      boost::mpi::all_reduce(*storage->getSystem()->comm, es, esum, std::plus<real>());
+      return esum;
     }
 
     template < typename _Potential, typename _dPotential > inline real
@@ -199,36 +204,203 @@ namespace espressopp {
     template < typename _Potential, typename _dPotential > inline real
     CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
     computeVirial() {
-      LOG4ESPP_INFO(theLogger, "computed virial for all particles in the cell lists");
+      LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up virial");
 
-      // for the long range interaction the virial is already reduced in _computeVirial
-      return potential -> _computeVirial(storage->getRealCells());
+      real w = 0.0;
+      for (PairList::Iterator it(verletList->getPairs());
+           it.isValid(); ++it) {
+        Particle &p1 = *it->first;
+        Particle &p2 = *it->second;
+        int type1 = p1.type();
+        int type2 = p2.type();
+        const Potential &potential = getPotential(type1, type2);
+        // shared_ptr<Potential> potential = getPotential(type1, type2);
+
+        Real3D force(0.0, 0.0, 0.0);
+        if(potential._computeForce(force, p1, p2)) {
+        // if(potential->_computeForce(force, p1, p2)) {
+          Real3D r21 = p1.position() - p2.position();
+          w = w + r21 * force;
+        }
+      }
+
+      // reduce over all CPUs
+      real wsum;
+      boost::mpi::all_reduce(*mpiWorld, w, wsum, std::plus<real>());
+      return wsum;
     }
 
     template < typename _Potential, typename _dPotential > inline void
     CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
-    computeVirialTensor(Tensor& wij) {
-      LOG4ESPP_INFO(theLogger, "computed virial tensor for all particles in the cell lists");
+    computeVirialTensor(Tensor& w) {
+       LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up virial tensor");
 
-      // for the long range interaction the virialTensor is already reduced in _computeVirialTensor
-      //wij += potential -> _computeVirialTensor(storage->getRealCells());
+      Tensor wlocal(0.0);
+      for (PairList::Iterator it(verletList->getPairs());
+           it.isValid(); ++it) {
+        Particle &p1 = *it->first;
+        Particle &p2 = *it->second;
+        int type1 = p1.type();
+        int type2 = p2.type();
+        const Potential &potential = getPotential(type1, type2);
+        // shared_ptr<Potential> potential = getPotential(type1, type2);
+
+        Real3D force(0.0, 0.0, 0.0);
+        if(potential._computeForce(force, p1, p2)) {
+        // if(potential->_computeForce(force, p1, p2)) {
+          Real3D r21 = p1.position() - p2.position();
+          wlocal += Tensor(r21, force);
+        }
+      }
+
+      // reduce over all CPUs
+      Tensor wsum(0.0);
+      boost::mpi::all_reduce(*mpiWorld, (double*)&wlocal, 6, (double*)&wsum, std::plus<double>());
+      w += wsum;
     }
 
 
     template < typename _Potential, typename _dPotential > inline void
     CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
-    computeVirialTensor(Tensor& wij, real z) {
-      std::cout<<"Warning! Calculating virial layerwise is not supported for "
-              "long range interactions."<<std::endl;
+    computeVirialTensor(Tensor& w, real z) {
+      LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up virial tensor over one z-layer");
+
+      System& system = verletList->getSystemRef();
+      Real3D Li = system.bc->getBoxL();
+
+      real rc_cutoff = verletList->getVerletCutoff();
+
+      // boundaries should be taken into account
+      bool ghost_layer = false;
+      real zghost = -100.0;
+      if(z<rc_cutoff){
+        zghost = z + Li[2];
+        ghost_layer = true;
+      }
+      else if(z>=Li[2]-rc_cutoff){
+        zghost = z - Li[2];
+        ghost_layer = true;
+      }
+
+      Tensor wlocal(0.0);
+      for (PairList::Iterator it(verletList->getPairs()); it.isValid(); ++it) {
+        Particle &p1 = *it->first;
+        Particle &p2 = *it->second;
+        Real3D p1pos = p1.position();
+        Real3D p2pos = p2.position();
+
+
+        if( (p1pos[2]>z && p2pos[2]<z) ||
+            (p1pos[2]<z && p2pos[2]>z) ||
+                (ghost_layer &&
+                    ((p1pos[2]>zghost && p2pos[2]<zghost) ||
+                    (p1pos[2]<zghost && p2pos[2]>zghost))
+                )
+          ){
+          int type1 = p1.type();
+          int type2 = p2.type();
+          const Potential &potential = getPotential(type1, type2);
+
+          Real3D force(0.0, 0.0, 0.0);
+          if(potential._computeForce(force, p1, p2)) {
+            Real3D r21 = p1pos - p2pos;
+            wlocal += Tensor(r21, force) / fabs(r21[2]);
+          }
+        }
+      }
+
+      // reduce over all CPUs
+      Tensor wsum(0.0);
+      boost::mpi::all_reduce(*mpiWorld, (double*)&wlocal, 6, (double*)&wsum, std::plus<double>());
+      w += wsum;
     }
 
     template < typename _Potential, typename _dPotential > inline void
     CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
-    computeVirialTensor(Tensor *wij, int n) {
-      std::cout<<"Warning! Calculating virial layerwise is not supported for "
-              "long range interactions."<<std::endl;
+    computeVirialTensor(Tensor *w, int n) {
+      LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up virial tensor in bins along z-direction");
+
+      System& system = verletList->getSystemRef();
+      Real3D Li = system.bc->getBoxL();
+
+      real z_dist = Li[2] / float(n);  // distance between two layers
+      Tensor *wlocal = new Tensor[n];
+      for(int i=0; i<n; i++) wlocal[i] = Tensor(0.0);
+      for (PairList::Iterator it(verletList->getPairs()); it.isValid(); ++it) {
+        Particle &p1 = *it->first;
+        Particle &p2 = *it->second;
+        int type1 = p1.type();
+        int type2 = p2.type();
+        Real3D p1pos = p1.position();
+        Real3D p2pos = p2.position();
+
+        const Potential &potential = getPotential(type1, type2);
+
+        Real3D force(0.0, 0.0, 0.0);
+        Tensor ww;
+        if(potential._computeForce(force, p1, p2)) {
+          Real3D r21 = p1pos - p2pos;
+          ww = Tensor(r21, force) / fabs(r21[2]);
+
+          int position1 = (int)( p1pos[2]/z_dist );
+          int position2 = (int)( p2pos[2]/z_dist );
+
+          int maxpos = std::max(position1, position2);
+          int minpos = std::min(position1, position2);
+
+          // boundaries should be taken into account
+          bool boundaries1 = false;
+          bool boundaries2 = false;
+          if(minpos < 0){
+            minpos += n;
+            boundaries1 =true;
+          }
+          if(maxpos >=n){
+            maxpos -= n;
+            boundaries2 =true;
+          }
+
+          if(boundaries1 || boundaries2){
+            for(int i = 0; i<=maxpos; i++){
+              wlocal[i] += ww;
+            }
+            for(int i = minpos+1; i<n; i++){
+              wlocal[i] += ww;
+            }
+          }
+          else{
+            for(int i = minpos+1; i<=maxpos; i++){
+              wlocal[i] += ww;
+            }
+          }
+        }
+      }
+
+      // reduce over all CPUs
+      Tensor *wsum = new Tensor[n];
+      boost::mpi::all_reduce(*mpiWorld, (double*)&wlocal, n, (double*)&wsum, std::plus<double>());
+
+      for(int j=0; j<n; j++){
+        w[j] += wsum[j];
+      }
+
+      delete [] wsum;
+      delete [] wlocal;
     }
 
+    template < typename _Potential, typename _dPotential >
+    inline real
+    CellListAllParticlesInteractionTemplateGPU< _Potential, _dPotential >::
+    getMaxCutoff() {
+      real cutoff = 0.0;
+      for (int i = 0; i < ntypes; i++) {
+        for (int j = 0; j < ntypes; j++) {
+            cutoff = std::max(cutoff, getPotential(i, j).getCutoff());
+            // cutoff = std::max(cutoff, getPotential(i, j)->getCutoff());
+        }
+      }
+      return cutoff;
+    }
   }
 }
 

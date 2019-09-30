@@ -41,10 +41,7 @@ namespace espressopp {
     GPUTransfer::GPUTransfer(shared_ptr<System> system)
     : Extension(system)
     {
-      printf("Constructor GPUTransfer\n");
-      // Initialize GPU
-      System& _system = getSystemRef();
-      StorageGPU* GPUStorage = _system.storage->getGPUstorage();
+
     }
 
     void GPUTransfer::disconnect(){
@@ -73,9 +70,9 @@ namespace espressopp {
     void GPUTransfer::resizeCellData(){
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
-      CellList localCells = system.storage->getLocalCells();
 
-      GPUStorage->numberCells = localCells.size();
+      GPUStorage->numberLocalCells = system.storage->getLocalCells().size();
+      //GPUStorage->numberRealCells = system.storage->getRealCells().size();
       GPUStorage->resizeCellData();
     }
 
@@ -104,8 +101,11 @@ namespace espressopp {
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
 
-      GPUStorage->numberParticles = system.storage->getNLocalParticles();
+      GPUStorage->numberLocalParticles = system.storage->getNLocalParticles();
+      GPUStorage->numberRealParticles = system.storage->getNRealParticles();
       GPUStorage->resizeParticleData();
+
+      printf("number local particles: %d\n", system.storage->getNLocalParticles());
     }
 
     void GPUTransfer::fillParticleStatics(){
@@ -114,12 +114,16 @@ namespace espressopp {
       StorageGPU* GPUStorage = system.storage->getGPUstorage();   
 
       unsigned int counterParticles = 0;
+      bool ghostParticle;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
+        ghostParticle = localCells[i]->neighborCells.size() == 0 ? true : false;
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           Particle &p = localCells[i]->particles[j];
+          GPUStorage->h_id[counterParticles] = p.getId();
           GPUStorage->h_type[counterParticles] = p.getType();
           GPUStorage->h_mass[counterParticles] = p.getMass();
           GPUStorage->h_drift[counterParticles] = p.getDrift();
+          GPUStorage->h_ghost[counterParticles] = ghostParticle;
           counterParticles++;
         }
       }
@@ -127,6 +131,7 @@ namespace espressopp {
     }
     // On decompose end
 
+    // Copy particle Pos in each time step
     void GPUTransfer::fillParticleVars(){
       System& system = getSystemRef();
       CellList localCells = system.storage->getLocalCells();
@@ -137,16 +142,15 @@ namespace espressopp {
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           Real3D pos = localCells[i]->particles[j].getPos();
+          //printf("pos 0: %f, 1: %f, 2: %f\n", pos.at(0), pos.at(1), pos.at(2));
           GPUStorage->h_pos[counterParticles] = make_double3(pos.at(0), pos.at(1), pos.at(2)); 
-          //GPUStorage->h_px[counterParticles] = pos.at(0);
-          //GPUStorage->h_py[counterParticles] = pos.at(1);
-          //GPUStorage->h_pz[counterParticles] = pos.at(2);
           counterParticles++;
         }
       }
       GPUStorage->h2dParticleVars();
     }
 
+    // Copy forces back in each time step
     void GPUTransfer::getParticleForces(){
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
@@ -155,15 +159,16 @@ namespace espressopp {
       GPUStorage->d2hParticleForces();
       
       unsigned int counterParticles = 0;
-      
 
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           double3 force3 = GPUStorage->h_force[counterParticles];
+          
           Real3D force3D(force3.x, force3.y, force3.z);
           Particle &p = localCells[i]->particles[j];
+          //printf("Force: x: %f, y: %f, z: %f\n", force3.x, force3.y, force3.z);
           p.force() += force3D;
-          //printf("Force copies back: %f, %f, %f\n", force3.x, force3.y, force3.z);
+          counterParticles++;
         }
       }
     }

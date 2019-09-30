@@ -57,7 +57,7 @@ namespace espressopp {
       
       ~d_LennardJonesGPU(){};
 
-      //__device__ __host__ 
+      __device__ __host__ 
       void preset() {
         double sig2 = sigma * sigma;
         double sig6 = sig2 * sig2 * sig2;
@@ -73,7 +73,7 @@ namespace espressopp {
         preset();
       }
 
-      //__device__ __host__ 
+      __device__ __host__ 
       double getEpsilon() const { return epsilon; }
 
       void setSigma(double _sigma) { 
@@ -81,7 +81,7 @@ namespace espressopp {
         preset();
       }
 
-      //__device__ __host__ 
+      __device__ __host__ 
       double getSigma() const { return sigma; }
       
       void setCutoff(double _cutoff) {
@@ -89,24 +89,29 @@ namespace espressopp {
         preset();
       }
 
+      __device__ __host__
       double getCutoff() const { return cutoff; }
 
-      //__device__ __host__ 
+      __device__ __host__ 
       bool _computeForceRaw(double3& force, const double3& dist, double distSqr){
 
         double frac2 = 1.0 / distSqr;
         double frac6 = frac2 * frac2 * frac2;
         double ffactor = frac6 * (ff1 * frac6 - ff2) * frac2;
-        //force = dist * ffactor;
+        force.x += dist.x * ffactor;
+        force.y += dist.y * ffactor;
+        force.z += dist.z * ffactor;
 
         return true;
       }
 
-      //__device__ __host__ 
+      __device__ __host__ 
       double _computeEnergySqrRaw(double distSqr){
+        double frac2 = sigma*sigma / distSqr;
+        double frac6 = frac2 * frac2 * frac2;
+        double energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
         
-        
-        return 0.0;
+        return energy;
       }
 
     };
@@ -122,7 +127,7 @@ namespace espressopp {
                       int* numCellN,
                       d_LennardJonesGPU* gpuPots);
                       */
-    void LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots);
+    double LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode);
   }
 }
 

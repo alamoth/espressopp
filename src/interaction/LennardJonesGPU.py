@@ -155,9 +155,9 @@ class LennardJonesGPULocal(PotentialLocal, interaction_LennardJonesGPU):
 
 class CellListLennardJonesGPULocal(InteractionLocal, interaction_CellListLennardJonesGPU):
 
-    def __init__(self, vl):
+    def __init__(self, vl, v2):
         if not (pmi._PMIComm and pmi._PMIComm.isActive()) or pmi._MPIcomm.rank in pmi._PMIComm.getMPIcpugroup():
-            cxxinit(self, interaction_CellListLennardJonesGPU, vl)
+            cxxinit(self, interaction_CellListLennardJonesGPU, vl, v2)
 
     def setPotential(self, type1, type2, potential):
         if not (pmi._PMIComm and pmi._PMIComm.isActive()) or pmi._MPIcomm.rank in pmi._PMIComm.getMPIcpugroup():
@@ -180,5 +180,5 @@ if pmi.isController:
         __metaclass__ = pmi.Proxy
         pmiproxydefs = dict(
             cls =  'espressopp.interaction.CellListLennardJonesGPULocal',
-            pmicall = ['setPotential', 'getPotential']
+            pmicall = ['setPotential', 'getPotential', 'getVerletList']
             )

@@ -1,63 +1,44 @@
 #include "StorageGPU.hpp"
-#include "StorageGPU.cuh"
+//#include "StorageGPU.cuh"
 
-//#include "types.hpp"
-//#include "System.hpp"
-//#include "Cell.hpp"
-//#include "Storage.hpp"
-
-  
-    //StorageGPU::StorageGPU(shared_ptr<System> system) : integrator::Extension(system){}
-
-    //StorageGPU::~StorageGPU(){}
     
 #define my_delete(x) {delete x; x = 0;}
 
     void StorageGPU::resizeParticleData(){
-        //printf("resizeParticleData\n");
-        //my_delete(h_px);
-        //my_delete(h_py);
-        //my_delete(h_pz);
+        my_delete(h_cellId);
+        my_delete(h_id);
         my_delete(h_type);
         my_delete(h_mass);
         my_delete(h_drift);
-        //my_delete(h_fx);
-        //my_delete(h_fy);
-        //my_delete(h_px);
-        //my_delete(h_fz);
 
         my_delete(h_pos);
         my_delete(h_force);
 
-        h_pos = new double3[numberParticles];
-        h_force = new double3[numberParticles];
+        h_cellId = new int[numberLocalParticles];
+        h_id = new int[numberLocalParticles];
+        h_type = new int[numberLocalParticles];
+        h_drift = new double[numberLocalParticles];
+        h_mass = new double[numberLocalParticles];
+        h_ghost = new bool[numberLocalParticles];
 
-        //h_px = new double[numberParticles];
-        //h_py = new double[numberParticles];
-        //h_pz = new double[numberParticles];
-        h_type = new int[numberParticles];
-        h_mass = new double[numberParticles];
-        h_drift = new double[numberParticles];
-        //h_fx = new double[numberParticles];
-        //h_fy = new double[numberParticles];
-        //h_fz = new double[numberParticles]; 
+        h_pos = new double3[numberLocalParticles];
+        h_force = new double3[numberLocalParticles];
 
-        gpu_resizeParticleData(numberParticles, &d_pos, &d_type, &d_mass, &d_drift, &d_force);
-        //gpu_resizeParticleData(numberParticles, &d_px, &d_py, &d_pz, &d_type, &d_mass, &d_drift, &d_fx, &d_fy, &d_fz);
+        gpu_resizeParticleData(numberLocalParticles, &d_cellId, &d_id, &d_type, &d_drift, &d_mass, &d_pos, &d_force, &d_ghost);
     }
 
     void StorageGPU::resizeCellData(){
         my_delete(h_cellOffsets);
         my_delete(h_numberCellNeighbors);
 
-        h_cellOffsets = new int[numberCells];
-        h_numberCellNeighbors = new int[numberCells];
+        h_cellOffsets = new int[numberLocalCells];
+        h_numberCellNeighbors = new int[numberLocalCells];
         
-        gpu_resizeCellData(numberCells, &d_cellOffsets, &d_numberCellNeighbors);
+        gpu_resizeCellData(numberLocalCells, &d_cellOffsets, &d_numberCellNeighbors);
     }
 
     void StorageGPU::h2dCellData(){
-        gpu_h2dCellData(    numberCells,
+        gpu_h2dCellData(    numberLocalCells,
                             &d_cellOffsets,
                             &d_numberCellNeighbors,
                             h_cellOffsets,
@@ -65,30 +46,25 @@
     }
     
     void StorageGPU::h2dParticleStatics(){
-        gpu_h2dParticleStatics( numberParticles,
+        gpu_h2dParticleStatics( numberLocalParticles,
+                                h_cellId,
+                                &d_cellId,
+                                h_id,
+                                &d_id,
+                                h_type,
+                                &d_type,
                                 h_drift,
                                 &d_drift,
                                 h_mass,
                                 &d_mass,
-                                h_type,
-                                &d_type);
+                                h_ghost,
+                                &d_ghost);
     }
 
     void StorageGPU::h2dParticleVars(){
-        gpu_h2dParticleVars(numberParticles, h_pos, &d_pos);
-        //gpu_h2dParticleVars(numberParticles, h_px, &d_px, h_py, &d_py, h_pz, &d_pz);
+        gpu_h2dParticleVars(numberLocalParticles, h_pos, &d_pos);
     }
 
     void StorageGPU::d2hParticleForces(){
-        //gpu_d2hParticleForces(  numberParticles, &d_fx,h_fx,&d_fy,h_fy,&d_fz, h_fz);
-        gpu_d2hParticleForces(numberParticles, h_force, &d_force);
+        gpu_d2hParticleForces(numberLocalParticles, h_force, &d_force);
     }
-    
-    void StorageGPU::freeParticleVars(){
-
-    }
-
-    void StorageGPU::initNullPtr(){
-        
-    }
-

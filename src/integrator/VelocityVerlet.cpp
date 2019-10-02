@@ -81,6 +81,7 @@ namespace espressopp {
         // time = timeIntegrate.getElapsedTime();
         LOG4ESPP_INFO(theLogger, "resort particles");
         storage.decompose();
+        gpuAftDec();
         maxDist = 0.0;
         resortFlag = false;
         // timeResort += timeIntegrate.getElapsedTime();
@@ -137,6 +138,7 @@ namespace espressopp {
             time = timeIntegrate.getElapsedTime();
             LOG4ESPP_INFO(theLogger, "step " << i << ": resort particles");
             storage.decompose();
+            gpuAftDec();
             maxDist  = 0.0;
             resortFlag = false;
             nResorts ++;
@@ -322,7 +324,7 @@ namespace espressopp {
 
       // signal
       aftInitF();
-
+      gpuBefF();
       System& sys = getSystemRef();
       const InteractionList& srIL = sys.shortRangeInteractions;
       for (size_t i = 0; i < srIL.size(); i++) {
@@ -330,9 +332,9 @@ namespace espressopp {
         real time;
         time = timeIntegrate.getElapsedTime();
         srIL[i]->addForces();
-        //srIL[i]->testFF();
         timeForceComp[i] += timeIntegrate.getElapsedTime() - time;
       }
+      gpuAftF();
     }
 
     void VelocityVerlet::updateForces()

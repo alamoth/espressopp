@@ -25,12 +25,13 @@
 #ifndef LennardJonesGPU_CUH
 #define LennardJonesGPU_CUH
 #include <cmath>
+#include <stdio.h>
+#include "stdio.h"
 
 
 #include <cuda_runtime.h>
 #include "storage/StorageGPU.hpp"
 using namespace std;
-
 
 namespace espressopp {
   namespace interaction {
@@ -92,17 +93,14 @@ namespace espressopp {
       __device__ __host__
       double getCutoff() const { return cutoff; }
 
-      __device__ __host__ 
-      bool _computeForceRaw(double3& force, const double3& dist, double distSqr){
-
+      inline __device__ __host__ 
+      void _computeForceRaw(double3& force, const double3& dist, double distSqr){
         double frac2 = 1.0 / distSqr;
         double frac6 = frac2 * frac2 * frac2;
         double ffactor = frac6 * (ff1 * frac6 - ff2) * frac2;
-        force.x += dist.x * ffactor;
-        force.y += dist.y * ffactor;
-        force.z += dist.z * ffactor;
-
-        return true;
+        force.x = dist.x * ffactor;
+        force.y = dist.y * ffactor;
+        force.z = dist.z * ffactor;
       }
 
       __device__ __host__ 
@@ -113,7 +111,6 @@ namespace espressopp {
         
         return energy;
       }
-
     };
   /*
     void LJGPUdriver( int nPart,

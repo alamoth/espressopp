@@ -130,9 +130,13 @@ namespace espressopp {
         //if(potential->_computeForce(force, p1, p2)) {
           p1.force() += force;
           p2.force() -= force;
-          printf("p1: x: %f, y: %f, z: %f;  p2: x: %f, y: %f, z: %f\n", p1.position().at(0), p1.position().at(1), p1.position().at(2), p2.position().at(0), p2.position().at(1), p2.position().at(2));
-          printf("id1: %d, id2: %d, force x: %f, y: %f, z: %f\n", p1.id(), p2.id(), force.at(0), force.at(1), force.at(2));
+          //printf("---\np1: x: %f, y: %f, z: %f;  p2: x: %f, y: %f, z: %f\n", p1.position().at(0), p1.position().at(1), p1.position().at(2), p2.position().at(0), p2.position().at(1), p2.position().at(2));
+          //printf("id1: %ld, id2: %ld, force x: %f, y: %f, z: %f\n---\n", p1.id(), p2.id(), force.at(0), force.at(1), force.at(2));
+          //if(abs(force.at(0)) + abs(force.at(1)) + abs(force.at(2)) > 1000 ){
+            
+          //}
           LOG4ESPP_TRACE(_Potential::theLogger, "id1=" << p1.id() << " id2=" << p2.id() << " force=" << force);
+          //std::cout << "id1= " << p1.id() << " id2= " << p2.id() << ", force= " << force << std::endl;
         }
       }
     }

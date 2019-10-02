@@ -53,9 +53,10 @@ namespace espressopp {
 
     void GPUTransfer::connect(){
       System& system = getSystemRef();
-      _onParticlesChanged   =   system.storage->onParticlesChanged.connect( boost::bind(&GPUTransfer::onDecompose, this));
-      _aftInitF             =   integrator->aftInitF.connect( boost::bind(&GPUTransfer::fillParticleVars, this));
-  	  _aftCalcF             =   integrator->aftCalcF.connect( boost::bind(&GPUTransfer::getParticleForces, this));
+    //  _onParticlesChanged   =   system.storage->onParticlesChanged.connect( boost::bind(&GPUTransfer::onDecompose, this));
+      _onParticlesChanged   =   integrator->gpuAftDec.connect( boost::bind(&GPUTransfer::onDecompose, this));
+      _aftInitF             =   integrator->gpuBefF.connect( boost::bind(&GPUTransfer::fillParticleVars, this));
+  	  _aftCalcF             =   integrator->gpuAftF.connect( boost::bind(&GPUTransfer::getParticleForces, this));
       _runInit              =   integrator->runInit.connect ( boost::bind(&GPUTransfer::onRunInit, this));
     }
 
@@ -65,6 +66,7 @@ namespace espressopp {
     void GPUTransfer::onRunInit(){
       GPUTransfer::resizeCellData();
       GPUTransfer::fillCellData();
+      GPUTransfer::onDecompose();
     }
 
     void GPUTransfer::resizeCellData(){
@@ -93,19 +95,23 @@ namespace espressopp {
     // On decompose, resize Particle Arrays and fill with statics
     //
     void GPUTransfer::onDecompose(){
+      //std::cout<< "On decompose" << std::endl;
       GPUTransfer::resizeParticleData();
       GPUTransfer::fillParticleStatics();
+      //GPUTransfer::fillParticleVars(); // TEST
     }
 
     void GPUTransfer::resizeParticleData(){
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
 
+      //printf("number local particles: %d\n", system.storage->getNLocalParticles());
+
       GPUStorage->numberLocalParticles = system.storage->getNLocalParticles();
       GPUStorage->numberRealParticles = system.storage->getNRealParticles();
+      //printf("Number local particles: %i\n", GPUStorage->numberLocalParticles);
       GPUStorage->resizeParticleData();
 
-      printf("number local particles: %d\n", system.storage->getNLocalParticles());
     }
 
     void GPUTransfer::fillParticleStatics(){
@@ -114,16 +120,18 @@ namespace espressopp {
       StorageGPU* GPUStorage = system.storage->getGPUstorage();   
 
       unsigned int counterParticles = 0;
-      bool ghostParticle;
+      bool realParticle;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
-        ghostParticle = localCells[i]->neighborCells.size() == 0 ? true : false;
+        realParticle = localCells[i]->neighborCells.size() == 0 ? false : true;
+        //printf("Cell: %d, nNeigh: %d\n", i, localCells[i]->neighborCells.size());
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           Particle &p = localCells[i]->particles[j];
           GPUStorage->h_id[counterParticles] = p.getId();
           GPUStorage->h_type[counterParticles] = p.getType();
           GPUStorage->h_mass[counterParticles] = p.getMass();
           GPUStorage->h_drift[counterParticles] = p.getDrift();
-          GPUStorage->h_ghost[counterParticles] = ghostParticle;
+          GPUStorage->h_real[counterParticles] = realParticle;
+          //printf("counter: %d, pID: %d, real: %d\n", counterParticles, p.getId(), realParticle);
           counterParticles++;
         }
       }

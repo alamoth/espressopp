@@ -10,6 +10,7 @@
         my_delete(h_type);
         my_delete(h_mass);
         my_delete(h_drift);
+        my_delete(h_real);
 
         my_delete(h_pos);
         my_delete(h_force);
@@ -19,12 +20,12 @@
         h_type = new int[numberLocalParticles];
         h_drift = new double[numberLocalParticles];
         h_mass = new double[numberLocalParticles];
-        h_ghost = new bool[numberLocalParticles];
+        h_real = new bool[numberLocalParticles];
 
         h_pos = new double3[numberLocalParticles];
         h_force = new double3[numberLocalParticles];
 
-        gpu_resizeParticleData(numberLocalParticles, &d_cellId, &d_id, &d_type, &d_drift, &d_mass, &d_pos, &d_force, &d_ghost);
+        gpu_resizeParticleData(numberLocalParticles, &d_cellId, &d_id, &d_type, &d_drift, &d_mass, &d_pos, &d_force, &d_real);
     }
 
     void StorageGPU::resizeCellData(){
@@ -57,8 +58,8 @@
                                 &d_drift,
                                 h_mass,
                                 &d_mass,
-                                h_ghost,
-                                &d_ghost);
+                                h_real,
+                                &d_real);
     }
 
     void StorageGPU::h2dParticleVars(){

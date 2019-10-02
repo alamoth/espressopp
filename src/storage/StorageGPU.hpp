@@ -45,9 +45,9 @@ class StorageGPU {
         double *d_drift = 0;
         double *um_drift = 0;
 
-        bool *h_ghost = 0;
-        bool *d_ghost = 0;
-        bool *um_ghost = 0;
+        bool *h_real = 0;
+        bool *d_real = 0;
+        bool *um_real = 0;
 
         int *h_cellOffsets = 0; 
         int *d_cellOffsets = 0;

@@ -94,7 +94,9 @@ namespace espressopp {
         boost::signals2::signal<void ()> befIntV; // before integrate2()
         boost::signals2::signal<void ()> aftIntV; // after  integrate2()
         boost::signals2::signal<void ()> aftIntSlow; // after integrateSlow() in VerlocityVerletRESPA
-
+        boost::signals2::signal<void ()> gpuBefF; // right before force calc
+        boost::signals2::signal<void ()> gpuAftF; // right after foce calc
+        boost::signals2::signal<void ()> gpuAftDec; // right after decompose
 
         /** Register this class so it can be used from Python. */
         static void registerPython();

@@ -46,7 +46,7 @@ namespace espressopp {
                 int* type,
                 int* cellOff,
                 int* numCellN, 
-                bool* ghost,
+                bool* real,
                 double* energy,
                 d_LennardJonesGPU* gpuPots,
                 int mode){
@@ -54,10 +54,12 @@ namespace espressopp {
 
       __shared__ double cutoff;
       __shared__ int calcMode;
+      __shared__ d_LennardJonesGPU potential;
 
-      if(idx == 0){
+      if(threadIdx.x == 0){
         cutoff = gpuPots[0].getCutoff();
         calcMode = mode;
+        potential = gpuPots[0];
       }
       __syncthreads();
 
@@ -66,15 +68,16 @@ namespace espressopp {
       double p_drift = drift[idx];
       int p_id = id[idx];
       int p_type = type[idx];
-      int p_ghost = ghost[idx] ? 0 : 1;
+      int p_real = real[idx] ? 1 : 0;
       double3 p_force = make_double3(0.0,0.0,0.0);
+      double3 test_force = make_double3(0.0,0.0,0.0);
       double3 p_dist;
       double distSqr;
       double p_energy = 0;
 
       if(idx < nPart){
         //printf("Cutoff: %f\n", gpuPots[0].cutoff);
-        //printf("Particle %d, Ghost: %s, pos: x: %f, y: %f, z: %f\n", idx, ghost[idx] ? "true" : "false", pos[idx].x, pos[idx].y, pos[idx].z);
+        //printf("Particle %d, real: %s, pos: x: %f, y: %f, z: %f\n", idx, real[idx] ? "true" : "false", pos[idx].x, pos[idx].y, pos[idx].z);
         for(int i = 0; i < nPart; i++){
           if(i != idx){
             distSqr = 0.0;
@@ -84,28 +87,40 @@ namespace espressopp {
             distSqr += p_dist.x * p_dist.x;
             distSqr += p_dist.y * p_dist.y;
             distSqr += p_dist.z * p_dist.z;
-            //printf("distSqr: %f, p_dist: x: %f, y: %f, z:%f\n", distSqr, p_dist.x, p_dist.y, p_dist.z);
-            if(distSqr < (cutoff * cutoff)){
+            
+            if(distSqr <= (cutoff * cutoff)){
               if(calcMode == 0){
-                gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
-                if(p_ghost == 1){
-                  //printf("-\n");
-                  //printf("ghost? %d\n", p_ghost);
-                  printf("p1: id: %d, x: %f, y: %f, z: %f;  p2: id: %d, x: %f, y: %f, z: %f\n", p_id, p_pos.x,p_pos.y,p_pos.z, id[i], pos[i].x, pos[i].y, pos[i].z);
-                  //printf("id1: %d, id2: %d, force x: %f, y: %f, z: %f\n", p_id, id[i], p_force.x, p_force.y, p_force.z);
+                if(p_real == 1){
+                  potential._computeForceRaw(p_force, p_dist, distSqr);
+
+                  test_force.x += p_force.x;
+                  test_force.y += p_force.y;
+                  test_force.z += p_force.z;
+
+                  p_force.x = 0;
+                  p_force.y = 0;
+                  p_force.z = 0;
                 }
               }
-              if(calcMode == 1){
-                p_energy += gpuPots[0]._computeEnergySqrRaw(distSqr);
-              }
+                  //printf("-\n");
+                  //printf("real? %d\n", p_real);
+                  //printf("thread idx: %d\np1 x: %f, y: %f, z: %f;  p2 x: %f, y: %f, z: %f, p1 real: %d, p2 real: %d\np1: id: %d, p2 id: %d, force x: %f, x: %f, z: %f\ndistSqr: %f, p_dist: x: %f, y: %f, z:%f\n\n" , 
+                  //idx, p_pos.x, p_pos.y, p_pos.z, pos[i].x, pos[i].y, pos[i].z, p_real, real[i], p_id, id[i], p_force.x, p_force.y, p_force.z, distSqr, p_dist.x, p_dist.y, p_dist.z);
+
             }
           }
+
+          if(calcMode == 1){
+            p_energy += potential._computeEnergySqrRaw(distSqr);
+          }
+
         }
+      
         // printf("Force x: %f, y: %f, z: %f\n", p_force.x, p_force.y, p_force.z);
         if(calcMode == 0){
-          force[idx].x = p_ghost * p_force.x;
-          force[idx].y = p_ghost * p_force.y;
-          force[idx].z = p_ghost * p_force.z;
+          force[idx].x = p_real * test_force.x;
+          force[idx].y = p_real * test_force.y;
+          force[idx].z = p_real * test_force.z;
         }
 
         if(calcMode == 1){
@@ -129,15 +144,16 @@ namespace espressopp {
 */
   double LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
     //printf("cutof: %f\n", gpuPots[0].sigma);
-    int numBlocks = gpuStorage->numberLocalParticles / 512 + 1;
+    int numThreads = 128;
+    int numBlocks = (gpuStorage->numberLocalParticles) / numThreads + 1;
     double *h_energy; 
     double *d_energy;
     double totalEnergy = 0;
 
     h_energy = new double[gpuStorage->numberLocalParticles];
     cudaMalloc(&d_energy, sizeof(double) * gpuStorage->numberLocalParticles);
-
-    testKernel<<<numBlocks, 512>>>(
+    //printf("Particle: %d, numBlocks: %d\n", gpuStorage->numberLocalParticles, numBlocks);
+    testKernel<<<numBlocks, numThreads>>>(
                             gpuStorage->numberLocalParticles, 
                             gpuStorage->numberLocalCells, 
                             gpuStorage->d_id,
@@ -148,14 +164,16 @@ namespace espressopp {
                             gpuStorage->d_type,
                             gpuStorage->d_cellOffsets,
                             gpuStorage->d_numberCellNeighbors,
-                            gpuStorage->d_ghost,
+                            gpuStorage->d_real,
                             d_energy,
                             gpuPots,
                             mode
                           );
+      cudaDeviceSynchronize(); 
 
-      printf("---\n");
+      //printf("---\n");
       if(mode == 1) {
+        printf("if you see this you failed");
         cudaMemcpy(h_energy, d_energy, sizeof(double) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost);
         for (int i = 0; i < gpuStorage->numberLocalParticles; i++){
           totalEnergy += h_energy[i];

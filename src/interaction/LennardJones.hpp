@@ -27,6 +27,7 @@
 #include "FixedPairListInteractionTemplate.hpp"
 #include "FixedPairListTypesInteractionTemplate.hpp"
 #include "Potential.hpp"
+#include <stdio.h>
 
 namespace espressopp {
   namespace interaction {
@@ -137,6 +138,7 @@ namespace espressopp {
         real frac6 = frac2 * frac2 * frac2;
         real ffactor = frac6 * (ff1 * frac6 - ff2) * frac2;
         force = dist * ffactor;
+        //std::cout << "Dist: " << dist << ", distSqr: " << distSqr << ", force: " << force << std::endl;  
         return true;
         
         // FORCE CAPPING HACK (was temporarily used for some ideal gas test simulations)

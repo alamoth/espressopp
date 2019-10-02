@@ -17,7 +17,7 @@ void gpu_resizeParticleData(    int N,
                                 double **d_mass, 
                                 double3 **d_pos,
                                 double3 **d_force,
-                                bool **d_ghost
+                                bool **d_real
                             ){
     int numBytesD = N * sizeof(double);
     int numBytesI = N * sizeof(int);
@@ -29,7 +29,7 @@ void gpu_resizeParticleData(    int N,
     if(*d_mass != 0) cudaFree(*d_mass);                                                                 CUERR
     if(*d_pos != 0) cudaFree(*d_pos);                                                                   CUERR
     if(*d_force != 0) cudaFree(*d_force);                                                               CUERR
-    if(*d_ghost != 0) cudaFree(*d_ghost);                                                               CUERR
+    if(*d_real != 0) cudaFree(*d_real);                                                               CUERR
 
     cudaMalloc(d_cellId, numBytesI);                                                                    CUERR 
     cudaMalloc(d_id, numBytesI);                                                                    CUERR 
@@ -38,7 +38,7 @@ void gpu_resizeParticleData(    int N,
     cudaMalloc(d_force, sizeof(double3) * N);                                                           CUERR
     cudaMalloc(d_mass, numBytesD);                                                                      CUERR
     cudaMalloc(d_drift, numBytesD);                                                                     CUERR
-    cudaMalloc(d_ghost, sizeof(bool) * N);                                                              CUERR
+    cudaMalloc(d_real, sizeof(bool) * N);                                                              CUERR
 
     cudaMemset(*d_force, 0, sizeof(double3) * N);                                                       CUERR
     
@@ -82,15 +82,15 @@ void gpu_h2dParticleStatics(    int N,
                                 double **d_drift,
                                 double *h_mass,
                                 double **d_mass,
-                                bool *h_ghost,
-                                bool **d_ghost){
+                                bool *h_real,
+                                bool **d_real){
 
     cudaMemcpy(*d_cellId,  h_cellId,  N * sizeof(int),cudaMemcpyHostToDevice);                          CUERR
     cudaMemcpy(*d_type,  h_type,  N * sizeof(int),    cudaMemcpyHostToDevice);                          CUERR
     cudaMemcpy(*d_id,  h_id,  N * sizeof(int),    cudaMemcpyHostToDevice);                          CUERR
     cudaMemcpy(*d_drift, h_drift, N * sizeof(double), cudaMemcpyHostToDevice);                          CUERR
     cudaMemcpy(*d_mass,  h_mass,  N * sizeof(double), cudaMemcpyHostToDevice);                          CUERR
-    cudaMemcpy(*d_ghost,  h_ghost,  N * sizeof(bool), cudaMemcpyHostToDevice);                          CUERR
+    cudaMemcpy(*d_real,  h_real,  N * sizeof(bool), cudaMemcpyHostToDevice);                          CUERR
 }
 
 void gpu_h2dParticleVars(   int N,

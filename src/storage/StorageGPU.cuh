@@ -8,7 +8,7 @@ typedef struct {
     int *type;
     double *mass;
     double *drift;
-    bool *ghost;
+    bool *real;
 } particleStatics;
 
 typedef struct {
@@ -25,7 +25,7 @@ void gpu_resizeParticleData(    int N,
                                 double **d_mass, 
                                 double3 **d_pos,
                                 double3 **d_force,
-                                bool **d_ghost
+                                bool **d_real
                             );
 
 
@@ -57,8 +57,8 @@ void gpu_h2dParticleStatics(    int N,
                                 double **d_drift,
                                 double *h_mass,
                                 double **d_mass,
-                                bool *h_ghost,
-                                bool **d_ghost
+                                bool *h_real,
+                                bool **d_real
                                 );
 
 void gpu_d2hParticleForces( int N,

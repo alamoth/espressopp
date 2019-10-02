@@ -149,9 +149,22 @@ namespace espressopp {
     CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
     computeEnergy() {
       LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up potential energies");
+      real e = 0.0;
       real es = 0.0;
+      for (PairList::Iterator it(verletList->getPairs()); it.isValid(); ++it) {
+        Particle &p1 = *it->first;
+        Particle &p2 = *it->second;
+        int type1 = p1.type();
+        int type2 = p2.type();
+        const Potential &potential = getPotential(type1, type2);
+        // shared_ptr<Potential> potential = getPotential(type1, type2);
+        e   = potential._computeEnergy(p1, p2);
+        // e   = potential->_computeEnergy(p1, p2);
+        es += e;
+        LOG4ESPP_TRACE(_Potential::theLogger, "id1=" << p1.id() << " id2=" << p2.id() << " potential energy=" << e);
+      }
       
-      es = potential->_computeEnergyGPU(storage->getGPUstorage(), d_potentials);
+      //es = potential->_computeEnergyGPU(storage->getGPUstorage(), d_potentials);
       // reduce over all CPUs
       real esum;
       //boost::mpi::all_reduce(*getVerletList()->getSystem()->comm, es, esum, std::plus<real>());

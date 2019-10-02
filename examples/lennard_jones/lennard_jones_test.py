@@ -56,13 +56,15 @@ The simulation consists of the following steps:
   9. writing configuration to a file
 """
 import espressopp
+import time
+import sys
 
 ########################################################################
 # 1. specification of the main simulation parameters                   #
 ########################################################################
 
 # number of particles
-Npart              = 32
+Npart              = 1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
@@ -85,9 +87,9 @@ sigma              = 1.0
 # interaction cut-off used during the warm-up phase
 warmup_cutoff      = pow(2.0, 1.0/6.0)
 # number of warm-up loops
-warmup_nloops      = 1 #10
+warmup_nloops      = 100 #10
 # number of integration steps performed in each warm-up loop
-warmup_isteps      = 1 #10
+warmup_isteps      = 200 #10
 # total number of integration steps of the warm-up phase
 total_warmup_steps = warmup_nloops * warmup_isteps
 # initial value for LJ epsilon at beginning of warmup
@@ -99,9 +101,9 @@ epsilon_delta      = (epsilon_end - epsilon_start) / warmup_nloops
 # force capping radius
 capradius          = 0.6
 # number of equilibration loops
-equil_nloops       = 1 #10
+equil_nloops       = 100 #20 #10
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 1
+equil_isteps       = 100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -279,6 +281,8 @@ integrator.resetTimers()
 # set integrator time step to zero again
 integrator.step = 0
 
+start_time = time.clock()
+
 print "starting equilibration ..."
 # print inital status information
 espressopp.tools.analyse.info(system, integrator)
@@ -289,6 +293,9 @@ for step in range(equil_nloops):
   espressopp.tools.analyse.info(system, integrator)
 print "equilibration finished"
 
+end_time = time.clock()
+sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
+
 ########################################################################
 # 9. writing configuration to file                                     #
 ########################################################################
@@ -298,13 +305,14 @@ print "equilibration finished"
 # first line      : number of particles
 # second line     : box_Lx, box_Ly, box_Lz
 # all other lines : ParticleID  ParticleType  x_pos  y_pos  z_pos  x_vel  y_vel  z_vel 
-filename = "lennard_jones_fluid_%0i.xyz" % integrator.step
+filename = "lennard_jones_fluid_C_%f.xyz" % time.clock()
 print "writing final configuration file ..." 
 espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
 
 # also write a PDB file which can be used to visualize configuration with VMD
-print "writing pdb file ..."
-filename = "lennard_jones_fluid_%0i.pdb" % integrator.step
-espressopp.tools.pdbwrite(filename, system, molsize=Npart)
+#print "writing pdb file ..."
+#filename = "lennard_jones_fluid_%0i.pdb" % integrator.step
+#espressopp.tools.pdbwrite(filename, system, molsize=Npart)
+
 
 print "finished."

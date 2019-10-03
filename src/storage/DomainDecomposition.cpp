@@ -246,9 +246,14 @@ namespace espressopp {
     int iy = (int)(box_sizeL[1] / (rc_skin * _nodeGrid[1]));
     int iz = (int)(box_sizeL[2] / (rc_skin * _nodeGrid[2]));
     Int3D _newCellGrid(ix, iy, iz);
+    
     printf("boxSIzeL x: %f, y: %f, z: %f, skin: %f, maxCutoff: %f\n", box_sizeL.at(0), box_sizeL.at(1), box_sizeL.at(2), skinL, maxCutoffL);
     printf("newCellGrid x: %d, y: %d, z: %d\n", _newCellGrid.at(0),_newCellGrid.at(1),_newCellGrid.at(2));
 
+    //StorageGPU* GPUStorage = getSystemRef().storage->getGPUstorage();
+    //GPUStorage->cellGrid.x = _newCellGrid[0];
+    //GPUStorage->cellGrid.x = _newCellGrid[1];
+    //PUStorage->cellGrid.x = _newCellGrid[2];
     // save all particles to temporary vector
     std::vector<ParticleList> tmp_pl;
     size_t _N = realCells.size();

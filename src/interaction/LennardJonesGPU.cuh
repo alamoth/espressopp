@@ -93,14 +93,14 @@ namespace espressopp {
       __device__ __host__
       double getCutoff() const { return cutoff; }
 
-      inline __device__ __host__ 
+      __device__ __host__ 
       void _computeForceRaw(double3& force, const double3& dist, double distSqr){
         double frac2 = 1.0 / distSqr;
         double frac6 = frac2 * frac2 * frac2;
         double ffactor = frac6 * (ff1 * frac6 - ff2) * frac2;
-        force.x = dist.x * ffactor;
-        force.y = dist.y * ffactor;
-        force.z = dist.z * ffactor;
+        force.x += dist.x * ffactor;
+        force.y += dist.y * ffactor;
+        force.z += dist.z * ffactor;
       }
 
       __device__ __host__ 
@@ -124,7 +124,7 @@ namespace espressopp {
                       int* numCellN,
                       d_LennardJonesGPU* gpuPots);
                       */
-    double LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode);
+    double LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int sizePots, int mode);
   }
 }
 

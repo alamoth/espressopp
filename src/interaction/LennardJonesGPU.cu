@@ -29,7 +29,12 @@
 #include <math.h>
 
 using namespace std;
-
+#define CUERR { \
+  cudaError_t cudaerr; \
+  if ((cudaerr = cudaGetLastError()) != cudaSuccess){ \
+      printf("CUDA ERROR: \"%s\" in File %s at LINE %d.\n", cudaGetErrorString(cudaerr), __FILE__, __LINE__); \
+  } \
+}
 
 
 namespace espressopp {
@@ -60,6 +65,7 @@ namespace espressopp {
         cutoff = gpuPots[0].getCutoff();
         calcMode = mode;
         potential = gpuPots[0];
+        //printf("Cutoff: %f, mode: %d, potential.sigma: %f\n", cutoff, calcMode, potential.getSigma());
       }
       __syncthreads();
 
@@ -128,6 +134,8 @@ namespace espressopp {
           //printf("Energy p %d: %f\n", idx, energy[idx]);
         }
       }
+      __syncthreads();
+
     }
 
 /*
@@ -142,7 +150,7 @@ namespace espressopp {
                       int* numCellN,
                       d_LennardJonesGPU* gpuPots){
 */
-  double LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
+  double LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int sizePots, int mode){
     //printf("cutof: %f\n", gpuPots[0].sigma);
     int numThreads = 128;
     int numBlocks = (gpuStorage->numberLocalParticles) / numThreads + 1;
@@ -169,7 +177,7 @@ namespace espressopp {
                             gpuPots,
                             mode
                           );
-      cudaDeviceSynchronize(); 
+      cudaDeviceSynchronize();  CUERR
 
       //printf("---\n");
       if(mode == 1) {

@@ -11,6 +11,8 @@ class StorageGPU {
     public:
         StorageGPU() {};
         ~StorageGPU() {};
+
+        int3 cellGrid = make_int3(0,0,0);
         
         int numberLocalParticles = 0;
         int numberLocalCells = 0;

@@ -105,8 +105,6 @@ namespace espressopp {
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
 
-      //printf("number local particles: %d\n", system.storage->getNLocalParticles());
-
       GPUStorage->numberLocalParticles = system.storage->getNLocalParticles();
       GPUStorage->numberRealParticles = system.storage->getNRealParticles();
       //printf("Number local particles: %i\n", GPUStorage->numberLocalParticles);
@@ -174,7 +172,8 @@ namespace espressopp {
           
           Real3D force3D(force3.x, force3.y, force3.z);
           Particle &p = localCells[i]->particles[j];
-          //printf("Force: x: %f, y: %f, z: %f\n", force3.x, force3.y, force3.z);
+          //if(force3.x > 0.01)
+            //printf("Force: x: %f, y: %f, z: %f\n", force3.x, force3.y, force3.z);
           p.force() += force3D;
           counterParticles++;
         }

@@ -110,8 +110,8 @@ namespace espressopp {
       }
       real getSigma() const { return sigma; }
       
-      bool _computeForceGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int sizePots){
-        LJGPUdriver(gpuStorage, gpuPots, sizePots, 0);
+      bool _computeForceGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots){
+        LJGPUdriver(gpuStorage, gpuPots, 0);
         return true;
       }
 
@@ -125,8 +125,8 @@ namespace espressopp {
         return true;
                       }
 
-      real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int sizePots){
-        return LJGPUdriver(gpuStorage, gpuPots, sizePots, 1);
+      real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots){
+        return LJGPUdriver(gpuStorage, gpuPots, 1);
       }
       
       real _computeEnergySqrRaw(real distSqr) const {

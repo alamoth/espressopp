@@ -75,6 +75,7 @@ namespace espressopp {
 
       GPUStorage->numberLocalCells = system.storage->getLocalCells().size();
       //GPUStorage->numberRealCells = system.storage->getRealCells().size();
+      //printf("number local: %d, number real: %d\n", GPUStorage->numberLocalCells, GPUStorage->numberRealCells);
       GPUStorage->resizeCellData();
     }
 
@@ -167,9 +168,10 @@ namespace espressopp {
       unsigned int counterParticles = 0;
 
       for(unsigned int i = 0; i < localCells.size(); ++i) {
+        bool realCell = localCells[i]->neighborCells.size() == 0 ? false : true;
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           double3 force3 = GPUStorage->h_force[counterParticles];
-          
+
           Real3D force3D(force3.x, force3.y, force3.z);
           Particle &p = localCells[i]->particles[j];
           //if(force3.x > 0.01)

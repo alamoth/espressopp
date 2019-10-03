@@ -86,7 +86,7 @@ namespace espressopp {
     //real cutVerlet = cut + getSystem() -> getSkin();
     cutVerlet = cut + getSystem() -> getSkin();
     cutsq = cutVerlet * cutVerlet;
-    
+    //printf("Cutoff: %f\n", cutVerlet);
     vlPairs.clear();
 
     // add particles to adress zone

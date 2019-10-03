@@ -141,7 +141,7 @@ namespace espressopp {
     CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
     addForces() {
       LOG4ESPP_INFO(theLogger, "add forces computed for all particles in the cell lists");
-      potential->_computeForceGPU(storage->getGPUstorage(), d_potentials, potentialArray.size_x());
+      potential->_computeForceGPU(storage->getGPUstorage(), d_potentials);
     }
 
     template < typename _Potential, typename _dPotential >

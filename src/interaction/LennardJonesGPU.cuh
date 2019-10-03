@@ -124,7 +124,7 @@ namespace espressopp {
                       int* numCellN,
                       d_LennardJonesGPU* gpuPots);
                       */
-    double LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int sizePots, int mode);
+    double LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode);
   }
 }
 

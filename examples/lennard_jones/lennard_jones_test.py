@@ -64,11 +64,11 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 256 #1024
+Npart              = 1024 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
-L                  = 10 #pow(Npart/rho, 1.0/3.0)
+L                  = pow(Npart/rho, 1.0/3.0)
 # cubic simulation box of size L
 box                = (L, L, L)
 # cutoff of the short range potential
@@ -149,6 +149,7 @@ nodeGrid           = espressopp.tools.decomp.nodeGrid(NCPUs,box,warmup_cutoff, s
 cellGrid           = espressopp.tools.decomp.cellGrid(box, nodeGrid, warmup_cutoff, skin)
 # create a domain decomposition particle storage with the calculated nodeGrid and cellGrid
 system.storage     = espressopp.storage.DomainDecomposition(system, nodeGrid, cellGrid)
+
 
 print "NCPUs              = ", NCPUs
 print "nodeGrid           = ", nodeGrid
@@ -286,9 +287,12 @@ start_time = time.clock()
 print "starting equilibration ..."
 # print inital status information
 espressopp.tools.analyse.info(system, integrator)
+sock = espressopp.tools.vmd.connect(system)
 for step in range(equil_nloops):
+
   # perform equilibration_isteps integration steps
   integrator.run(equil_isteps)
+  espressopp.tools.vmd.imd_positions(system, sock)
   # print status information
   espressopp.tools.analyse.info(system, integrator)
 print "equilibration finished"
@@ -309,10 +313,11 @@ filename = "lennard_jones_fluid_C_%f.xyz" % time.clock()
 print "writing final configuration file ..." 
 espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
 
-# also write a PDB file which can be used to visualize configuration with VMD
-#print "writing pdb file ..."
-#filename = "lennard_jones_fluid_%0i.pdb" % integrator.step
-#espressopp.tools.pdbwrite(filename, system, molsize=Npart)
+#also write a PDB file which can be used to visualize configuration with VMD
+print "writing pdb file ..."
+filename = "lennard_jones_fluid_%f.pdb" % time.clock()
+espressopp.tools.pdbwrite(filename, system, molsize=Npart)
+
 
 
 print "finished."

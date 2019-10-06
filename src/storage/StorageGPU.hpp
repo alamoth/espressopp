@@ -4,6 +4,7 @@
 #include "StorageGPU.cuh"
 #include <vector>
 #include <cuda_runtime.h>
+#include <stdio.h>
 
 
 
@@ -14,8 +15,6 @@ class StorageGPU {
         
         int numberLocalParticles = 0;
         int numberLocalCells = 0;
-        int numberRealParticles = 0;
-        int numberRealCells = 0;
 
         double3 *d_pos = 0;
         double3 *h_pos = 0;
@@ -53,10 +52,12 @@ class StorageGPU {
         int *d_cellOffsets = 0;
         int *um_cellOffsets = 0;
 
+        int *h_particlesCell = 0;
+        int *d_particlesCell = 0;
+        int *um_particlesCell = 0;
 
-        int *h_numberCellNeighbors = 0;
-        int *d_numberCellNeighbors = 0;
-        int *um_numberCellNeighbors = 0;
+        int *h_cellNeighbors = 0;
+        int *d_cellNeighbors = 0;
 
         void resizeParticleData();
         void resizeCellData();

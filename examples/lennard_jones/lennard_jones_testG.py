@@ -64,7 +64,7 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 1024
+Npart              = 512 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
@@ -101,7 +101,7 @@ epsilon_delta      = (epsilon_end - epsilon_start) / warmup_nloops
 # force capping radius
 capradius          = 0.6
 # number of equilibration loops
-equil_nloops       = 100 #20
+equil_nloops       = 20 #20
 # number of integration steps performed in each equilibration loop
 equil_isteps       = 100
 

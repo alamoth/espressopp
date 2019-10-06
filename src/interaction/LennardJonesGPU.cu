@@ -44,38 +44,38 @@ namespace espressopp {
     testKernel( int nPart,
                 int nCells,
                 int* id,
+                int* cellId,
                 double3* pos,
                 double3* force,
                 double* mass,
                 double* drift,
                 int* type,
-                int* cellOff,
-                int* numCellN, 
                 bool* real,
+                int* cellParticles, 
+                int* cellOffsets,
+                int* cellNeighbors,
                 double* energy,
                 d_LennardJonesGPU* gpuPots,
                 int mode){
-      int idx = blockIdx.x*blockDim.x + threadIdx.x;
+      int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
       __shared__ double cutoff;
       __shared__ int calcMode;
       __shared__ d_LennardJonesGPU potential;
 
       if(threadIdx.x == 0){
-        //cutoff = gpuPots[0].getCutoff();
-        cutoff = 2.9f;
+        cutoff = gpuPots[0].getCutoff();
         calcMode = mode;
         potential = gpuPots[0];
-        //printf("Cutoff: %f, mode: %d, potential.sigma: %f\n", cutoff, calcMode, potential.getSigma());
       }
       __syncthreads();
 
       double3 p_pos = pos[idx];
       double p_mass = mass[idx];
       double p_drift = drift[idx];
-      int p_id = id[idx];
       int p_type = type[idx];
       int p_real = real[idx] ? 1 : 0;
+      int p_cellId = cellId[idx];
       double3 p_force = make_double3(0.0,0.0,0.0);
       double3 test_force = make_double3(0.0,0.0,0.0);
       double3 p_dist;
@@ -83,8 +83,17 @@ namespace espressopp {
       double p_energy = 0;
 
       if(idx < nPart){
-        //printf("Cutoff: %f\n", gpuPots[0].cutoff);
-        //printf("Particle %d, real: %s, pos: x: %f, y: %f, z: %f\n", idx, real[idx] ? "true" : "false", pos[idx].x, pos[idx].y, pos[idx].z);
+/*
+        if(p_real == 1){
+          for(int i = 0; i < 27; i++){
+            int currentCellId = cellNeighbors[p_cellId * 27 + i];
+            for(int j = 0; j < cellParticles[currentCellId]; ++j){
+              
+            }
+          }
+        }
+*/
+
         for(int i = 0; i < nPart; i++){
           if(i != idx){
             distSqr = 0.0;
@@ -109,10 +118,6 @@ namespace espressopp {
                   p_force.z = 0;
                 }
               }
-                  //printf("-\n");
-                  //printf("real? %d\n", p_real);
-                  //printf("thread idx: %d\np1 x: %f, y: %f, z: %f;  p2 x: %f, y: %f, z: %f, p1 real: %d, p2 real: %d\np1: id: %d, p2 id: %d, force x: %f, x: %f, z: %f\ndistSqr: %f, p_dist: x: %f, y: %f, z:%f\n\n" ,  idx, p_pos.x, p_pos.y, p_pos.z, pos[i].x, pos[i].y, pos[i].z, p_real, real[i], p_id, id[i], p_force.x, p_force.y, p_force.z, distSqr, p_dist.x, p_dist.y, p_dist.z);
-
             }
           }
 
@@ -122,7 +127,6 @@ namespace espressopp {
 
         }
       
-        // printf("Force x: %f, y: %f, z: %f\n", p_force.x, p_force.y, p_force.z);
         if(calcMode == 0){
           force[idx].x = p_real * test_force.x;
           force[idx].y = p_real * test_force.y;
@@ -131,7 +135,6 @@ namespace espressopp {
 
         if(calcMode == 1){
           energy[idx] = p_energy;
-          //printf("Energy p %d: %f\n", idx, energy[idx]);
         }
       }
       __syncthreads();
@@ -158,21 +161,23 @@ namespace espressopp {
     double *d_energy;
     double totalEnergy = 0;
 
-    //h_energy = new double[gpuStorage->numberLocalParticles];
-    //cudaMalloc(&d_energy, sizeof(double) * gpuStorage->numberLocalParticles);
+    h_energy = new double[gpuStorage->numberLocalParticles];
+    cudaMalloc(&d_energy, sizeof(double) * gpuStorage->numberLocalParticles);
     //printf("Particle: %d, numBlocks: %d\n", gpuStorage->numberLocalParticles, numBlocks);
     testKernel<<<numBlocks, numThreads>>>(
                             gpuStorage->numberLocalParticles, 
                             gpuStorage->numberLocalCells, 
                             gpuStorage->d_id,
+                            gpuStorage->d_cellId,
                             gpuStorage->d_pos,
                             gpuStorage->d_force,
                             gpuStorage->d_mass,
                             gpuStorage->d_drift,
                             gpuStorage->d_type,
-                            gpuStorage->d_cellOffsets,
-                            gpuStorage->d_numberCellNeighbors,
                             gpuStorage->d_real,
+                            gpuStorage->d_particlesCell,
+                            gpuStorage->d_cellNeighbors,
+                            gpuStorage->d_cellOffsets,
                             d_energy,
                             gpuPots,
                             mode

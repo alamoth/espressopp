@@ -64,7 +64,7 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 1024 #1024
+Npart              = 512 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
@@ -287,12 +287,12 @@ start_time = time.clock()
 print "starting equilibration ..."
 # print inital status information
 espressopp.tools.analyse.info(system, integrator)
-sock = espressopp.tools.vmd.connect(system)
+#sock = espressopp.tools.vmd.connect(system)
 for step in range(equil_nloops):
 
   # perform equilibration_isteps integration steps
   integrator.run(equil_isteps)
-  espressopp.tools.vmd.imd_positions(system, sock)
+  #espressopp.tools.vmd.imd_positions(system, sock)
   # print status information
   espressopp.tools.analyse.info(system, integrator)
 print "equilibration finished"

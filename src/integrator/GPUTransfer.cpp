@@ -74,19 +74,24 @@ namespace espressopp {
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
 
       GPUStorage->numberLocalCells = system.storage->getLocalCells().size();
-      //GPUStorage->numberRealCells = system.storage->getRealCells().size();
-      //printf("number local: %d, number real: %d\n", GPUStorage->numberLocalCells, GPUStorage->numberRealCells);
       GPUStorage->resizeCellData();
     }
 
     void GPUTransfer::fillCellData(){
+      mpi::communicator world;
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
       CellList localCells = system.storage->getLocalCells();
       int counterParticles = 0;
+      bool realCell;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
-        GPUStorage->h_cellOffsets[i] = counterParticles;
-        GPUStorage->h_numberCellNeighbors[i] = localCells[i]->neighborCells.size() == 0 ? 0 : 1;
+        realCell = localCells[i]->neighborCells.size() == 0 ? false : true;
+        if(realCell){
+          GPUStorage->h_cellNeighbors[i * 27] = localCells[i]->id;
+          for(unsigned int j = 0; j < 26; ++j){
+            GPUStorage->h_cellNeighbors[i * 27 + j + 1] = localCells[i]->neighborCells[j].cell->id;
+          }
+        }
         counterParticles += localCells[i]->particles.size();
       }
       GPUStorage->h2dCellData();
@@ -96,10 +101,8 @@ namespace espressopp {
     // On decompose, resize Particle Arrays and fill with statics
     //
     void GPUTransfer::onDecompose(){
-      //std::cout<< "On decompose" << std::endl;
       GPUTransfer::resizeParticleData();
       GPUTransfer::fillParticleStatics();
-      //GPUTransfer::fillParticleVars(); // TEST
     }
 
     void GPUTransfer::resizeParticleData(){
@@ -107,10 +110,7 @@ namespace espressopp {
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
 
       GPUStorage->numberLocalParticles = system.storage->getNLocalParticles();
-      GPUStorage->numberRealParticles = system.storage->getNRealParticles();
-      //printf("Number local particles: %i\n", GPUStorage->numberLocalParticles);
       GPUStorage->resizeParticleData();
-
     }
 
     void GPUTransfer::fillParticleStatics(){
@@ -122,15 +122,16 @@ namespace espressopp {
       bool realParticle;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         realParticle = localCells[i]->neighborCells.size() == 0 ? false : true;
-        //printf("Cell: %d, nNeigh: %d\n", i, localCells[i]->neighborCells.size());
+        GPUStorage->h_cellOffsets[i] = counterParticles;
+        GPUStorage->h_particlesCell[i] = localCells[i]->neighborCells.size();
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           Particle &p = localCells[i]->particles[j];
           GPUStorage->h_id[counterParticles] = p.getId();
+          GPUStorage->h_cellId[counterParticles] = localCells[i]->id;
           GPUStorage->h_type[counterParticles] = p.getType();
           GPUStorage->h_mass[counterParticles] = p.getMass();
           GPUStorage->h_drift[counterParticles] = p.getDrift();
           GPUStorage->h_real[counterParticles] = realParticle;
-          //printf("counter: %d, pID: %d, real: %d\n", counterParticles, p.getId(), realParticle);
           counterParticles++;
         }
       }
@@ -149,7 +150,6 @@ namespace espressopp {
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           Real3D pos = localCells[i]->particles[j].getPos();
-          //printf("pos 0: %f, 1: %f, 2: %f\n", pos.at(0), pos.at(1), pos.at(2));
           GPUStorage->h_pos[counterParticles] = make_double3(pos.at(0), pos.at(1), pos.at(2)); 
           counterParticles++;
         }
@@ -168,14 +168,10 @@ namespace espressopp {
       unsigned int counterParticles = 0;
 
       for(unsigned int i = 0; i < localCells.size(); ++i) {
-        bool realCell = localCells[i]->neighborCells.size() == 0 ? false : true;
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           double3 force3 = GPUStorage->h_force[counterParticles];
-
           Real3D force3D(force3.x, force3.y, force3.z);
           Particle &p = localCells[i]->particles[j];
-          //if(force3.x > 0.01)
-            //printf("Force: x: %f, y: %f, z: %f\n", force3.x, force3.y, force3.z);
           p.force() += force3D;
           counterParticles++;
         }

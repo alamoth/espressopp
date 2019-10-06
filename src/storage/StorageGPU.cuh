@@ -14,7 +14,7 @@ typedef struct {
 typedef struct {
     int numberCells;
     int *cellOffsets;
-    int *numberCellNeighbors;
+    int *particlesCell;
 } cellInfo;
 
 void gpu_resizeParticleData(    int N, 
@@ -31,14 +31,17 @@ void gpu_resizeParticleData(    int N,
 
 void gpu_h2dCellData(   int M, 
                         int **d_cellOffsets, 
-                        int **d_numberCellNeighbors, 
+                        int **d_particlesCell, 
+                        int **d_cellNeighbors,
                         int *h_cellOffsets, 
-                        int *h_numberCellNeighbors
+                        int *h_particlesCell,
+                        int *h_cellNeighbors
                     ); 
 
 void gpu_resizeCellData(  int N,
                             int **d_cellOffsets,
-                            int **d_numberCellNeighbors);
+                            int **d_particlesCell,
+                            int **d_cellNeighbors);
 
 
 void gpu_h2dParticleVars(   int N,

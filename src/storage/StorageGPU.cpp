@@ -30,20 +30,23 @@
 
     void StorageGPU::resizeCellData(){
         my_delete(h_cellOffsets);
-        my_delete(h_numberCellNeighbors);
+        my_delete(h_particlesCell);
+        my_delete(h_cellNeighbors);
 
         h_cellOffsets = new int[numberLocalCells];
-        h_numberCellNeighbors = new int[numberLocalCells];
-        
-        gpu_resizeCellData(numberLocalCells, &d_cellOffsets, &d_numberCellNeighbors);
+        h_particlesCell = new int[numberLocalCells];
+        h_cellNeighbors = new int[numberLocalCells * 27];
+        gpu_resizeCellData(numberLocalCells, &d_cellOffsets, &d_particlesCell, &d_cellNeighbors);
     }
 
     void StorageGPU::h2dCellData(){
         gpu_h2dCellData(    numberLocalCells,
                             &d_cellOffsets,
-                            &d_numberCellNeighbors,
+                            &d_particlesCell,
+                            &d_cellNeighbors,
                             h_cellOffsets,
-                            h_numberCellNeighbors);
+                            h_particlesCell,
+                            h_cellNeighbors);
     }
     
     void StorageGPU::h2dParticleStatics(){

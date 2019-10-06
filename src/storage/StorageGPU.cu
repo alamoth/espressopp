@@ -46,28 +46,35 @@ void gpu_resizeParticleData(    int N,
 
 void gpu_h2dCellData(   int M, 
                         int **d_cellOffsets, 
-                        int **d_numberCellNeighbors, 
+                        int **d_particlesCell, 
+                        int **d_cellNeighbors,
                         int *h_cellOffsets, 
-                        int *h_numberCellNeighbors) {
+                        int *h_particlesCell,
+                        int *h_cellNeighbors
+                    ) {
     int numBytesI = M * sizeof(int);
     cudaMemcpy(*d_cellOffsets, h_cellOffsets, numBytesI, cudaMemcpyHostToDevice);                       CUERR
-    cudaMemcpy(*d_numberCellNeighbors, h_numberCellNeighbors, numBytesI, cudaMemcpyHostToDevice);       CUERR
+    cudaMemcpy(*d_particlesCell, h_particlesCell, numBytesI, cudaMemcpyHostToDevice);       CUERR
+    cudaMemcpy(*d_cellNeighbors, h_cellNeighbors, numBytesI * 27, cudaMemcpyHostToDevice);              CUERR
 
 }
 
 void gpu_resizeCellData(    int M,
                             int **d_cellOffsets,
-                            int **d_numberCellNeighbors) {
+                            int **d_particlesCell,
+                            int **d_cellNeighbors) {
 
     int numBytes = M * sizeof(int);
 
-    if(*d_cellOffsets != 0 && *d_numberCellNeighbors != 0){
+    if(*d_cellOffsets != 0 && *d_particlesCell != 0){
         cudaFree(*d_cellOffsets);                                                                       CUERR
-        cudaFree(*d_numberCellNeighbors);                                                               CUERR
+        cudaFree(*d_particlesCell);                                                               CUERR
+        cudaFree(*d_cellNeighbors);                                                                     CUERR
     }
 
     cudaMalloc(d_cellOffsets, numBytes);                                                                CUERR
-    cudaMalloc(d_numberCellNeighbors, numBytes);                                                        CUERR
+    cudaMalloc(d_particlesCell, numBytes);                                                        CUERR
+    cudaMalloc(d_cellNeighbors, numBytes * 27);                                                         CUERR
 
 }
 

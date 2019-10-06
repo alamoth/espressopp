@@ -78,6 +78,7 @@ namespace espressopp {
   {};
 
   struct Cell {
+    int id;
     ParticleList particles;
     NeighborCellList neighborCells;
   };

@@ -78,6 +78,11 @@ namespace espressopp {
           << " cell grid = "
           << _cellGrid[0] << "x" << _cellGrid[1] << "x" << _cellGrid[2]);
 
+    //StorageGPU* GPUStorage = getSystemRef().storage->getGPUstorage();
+    //GPUStorage->cellGridGPU.x = _cellGrid[0];
+    //GPUStorage->cellGridGPU.y = _cellGrid[1];
+    //GPUStorage->cellGridGPU.z = _cellGrid[2];
+
     createCellGrid(_nodeGrid, _cellGrid);
     initCellInteractions();
     prepareGhostCommunication();
@@ -87,6 +92,8 @@ namespace espressopp {
   void DomainDecomposition:: createCellGrid(const Int3D& _nodeGrid, const Int3D& _cellGrid) {
     real myLeft[3];
     real myRight[3];
+
+    
 
     nodeGrid = NodeGrid(_nodeGrid, getSystem()->comm->rank(), getSystem()->bc->getBoxL());
 
@@ -247,13 +254,9 @@ namespace espressopp {
     int iz = (int)(box_sizeL[2] / (rc_skin * _nodeGrid[2]));
     Int3D _newCellGrid(ix, iy, iz);
     
-    printf("boxSIzeL x: %f, y: %f, z: %f, skin: %f, maxCutoff: %f\n", box_sizeL.at(0), box_sizeL.at(1), box_sizeL.at(2), skinL, maxCutoffL);
+    printf("boxSizeL x: %f, y: %f, z: %f, skin: %f, maxCutoff: %f\n", box_sizeL.at(0), box_sizeL.at(1), box_sizeL.at(2), skinL, maxCutoffL);
     printf("newCellGrid x: %d, y: %d, z: %d\n", _newCellGrid.at(0),_newCellGrid.at(1),_newCellGrid.at(2));
 
-    //StorageGPU* GPUStorage = getSystemRef().storage->getGPUstorage();
-    //GPUStorage->cellGrid.x = _newCellGrid[0];
-    //GPUStorage->cellGrid.x = _newCellGrid[1];
-    //PUStorage->cellGrid.x = _newCellGrid[2];
     // save all particles to temporary vector
     std::vector<ParticleList> tmp_pl;
     size_t _N = realCells.size();
@@ -304,6 +307,7 @@ namespace espressopp {
         for (int m = cellGrid.getInnerCellsBegin(0); m < cellGrid.getInnerCellsEnd(0); ++m) {
           longint cellIdx = cellGrid.mapPositionToIndex(m, n, o);
           Cell *cell = &cells[cellIdx];
+          cell->id = cellIdx;
 
           LOG4ESPP_TRACE(logger, "setting up neighbors for cell " << cell - getFirstCell()
                 << " @ " << m << " " << n << " " << o);
@@ -317,6 +321,7 @@ namespace espressopp {
                 if (p != o || q != n || r != m) {
                   longint cell2Idx = cellGrid.mapPositionToIndex(r, q, p);
                   Cell *cell2 = &cells[cell2Idx];
+                  cell2->id = cell2Idx;
                   cell->neighborCells.push_back(NeighborCellInfo(cell2, (cell2Idx<cellIdx)));
 
                   LOG4ESPP_TRACE(logger, "neighbor cell " << cell2 - getFirstCell()

@@ -151,6 +151,7 @@ namespace espressopp {
       LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up potential energies");
       real e = 0.0;
       real es = 0.0;
+      /*
       for (PairList::Iterator it(verletList->getPairs()); it.isValid(); ++it) {
         Particle &p1 = *it->first;
         Particle &p2 = *it->second;
@@ -163,8 +164,9 @@ namespace espressopp {
         es += e;
         LOG4ESPP_TRACE(_Potential::theLogger, "id1=" << p1.id() << " id2=" << p2.id() << " potential energy=" << e);
       }
+      */
       
-      //es = potential->_computeEnergyGPU(storage->getGPUstorage(), d_potentials);
+      es = potential->_computeEnergyGPU(storage->getGPUstorage(), d_potentials);
       // reduce over all CPUs
       real esum;
       //boost::mpi::all_reduce(*getVerletList()->getSystem()->comm, es, esum, std::plus<real>());

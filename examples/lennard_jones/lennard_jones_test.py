@@ -296,8 +296,9 @@ for step in range(equil_nloops):
   # print status information
   espressopp.tools.analyse.info(system, integrator)
 print "equilibration finished"
-
 end_time = time.clock()
+espressopp.tools.analyse.final_info(system, integrator, verletlist, start_time, end_time)
+
 sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
 
 ########################################################################

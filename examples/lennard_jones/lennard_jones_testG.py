@@ -295,6 +295,8 @@ for step in range(equil_nloops):
 print "equilibration finished"
 
 end_time = time.clock()
+espressopp.tools.analyse.final_info(system, integrator, verletlist, start_time, end_time)
+
 sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
 
 ########################################################################
@@ -308,7 +310,7 @@ sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
 # all other lines : ParticleID  ParticleType  x_pos  y_pos  z_pos  x_vel  y_vel  z_vel 
 filename = "lennard_jones_fluid_G_%f.xyz" % time.clock()
 print "writing final configuration file ..." 
-espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
+#espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
 
 # also write a PDB file which can be used to visualize configuration with VMD
 #print "writing pdb file ..."
@@ -316,6 +318,6 @@ espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
 #espressopp.tools.pdbwrite(filename, system, molsize=Npart)
 print "writing pdb file ..."
 filename = "lennard_jones_fluid_G_%f.pdb" % time.clock()
-espressopp.tools.pdbwrite(filename, system, molsize=Npart)
+#espressopp.tools.pdbwrite(filename, system, molsize=Npart)
 
 print "finished."

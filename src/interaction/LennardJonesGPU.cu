@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include "LennardJonesGPU.cuh"
 #include <math.h>
+#include "Tensor.hpp"
+
 
 using namespace std;
 #define CUERR { \
@@ -102,20 +104,26 @@ namespace espressopp {
                 distSqr += p_dist.z * p_dist.z;
 
                 if(distSqr <= (cutoff * cutoff)){
-                  gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
-                  p_numForceCalc++;
-                  test_force.x += p_force.x;
-                  test_force.y += p_force.y;
-                  test_force.z += p_force.z;
+                  if(calcMode == 0){
+                    gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
+                    p_numForceCalc++;
+                    test_force.x += p_force.x;
+                    test_force.y += p_force.y;
+                    test_force.z += p_force.z;
+  
+                    p_force.x = 0;
+                    p_force.y = 0;
+                    p_force.z = 0;
+                  }
+                  if(calcMode == 1){
+                    p_energy += potential._computeEnergySqrRaw(distSqr);
+                  }
 
-                  p_force.x = 0;
-                  p_force.y = 0;
-                  p_force.z = 0;
                 }
               }
               //__syncthreads();
             }
-           // __syncthreads();
+           //cd  __syncthreads();
           }
 //*/
 /*
@@ -149,10 +157,6 @@ namespace espressopp {
       }
       */
     }
-
-        if(calcMode == 1){
-          p_energy += potential._computeEnergySqrRaw(distSqr);
-        }
 
         if(calcMode == 0){
           force[idx].x = p_real * test_force.x;
@@ -215,7 +219,6 @@ namespace espressopp {
 
       //printf("---\n");
       if(mode == 1) {
-        printf("if you see this you failed");
         cudaMemcpy(h_energy, d_energy, sizeof(double) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost);
         for (int i = 0; i < gpuStorage->numberLocalParticles; i++){
           totalEnergy += h_energy[i];

@@ -70,45 +70,40 @@ namespace espressopp {
       }
       __syncthreads();
 
-      double3 p_pos = pos[idx];
-      double p_mass = mass[idx];
-      double p_drift = drift[idx];
-      int p_type = type[idx];
-      int p_real = real[idx] ? 1 : 0;
-      int p_cellId = cellId[idx];
-      double3 p_force = make_double3(0.0,0.0,0.0);
-      double3 test_force = make_double3(0.0,0.0,0.0);
-      double3 p_dist;
-      double distSqr;
-      double p_energy = 0;
+      
 
       if(idx < nPart){
-/*
+        double3 p_pos = pos[idx];
+        double p_mass = mass[idx];
+        double p_drift = drift[idx];
+        int p_type = type[idx];
+        int p_real = real[idx] ? 1 : 0;
+        int p_cellId = cellId[idx];
+        double3 p_force = make_double3(0.0,0.0,0.0);
+        double3 test_force = make_double3(0.0,0.0,0.0);
+        double3 p_dist;
+        double distSqr;
+        double p_energy = 0;
+        int p_numForceCalc = 0;
         if(p_real == 1){
+          ///*
           for(int i = 0; i < 27; i++){
             int currentCellId = cellNeighbors[p_cellId * 27 + i];
             for(int j = 0; j < cellParticles[currentCellId]; ++j){
-              
-            }
-          }
-        }
-*/
+              int currentCellOffset = cellOffsets[currentCellId];
+              if(currentCellOffset + j != idx){
 
-        for(int i = 0; i < nPart; i++){
-          if(i != idx){
-            distSqr = 0.0;
-            p_dist.x = p_pos.x - pos[i].x;
-            p_dist.y = p_pos.y - pos[i].y;
-            p_dist.z = p_pos.z - pos[i].z;
-            distSqr += p_dist.x * p_dist.x;
-            distSqr += p_dist.y * p_dist.y;
-            distSqr += p_dist.z * p_dist.z;
-            
-            if(distSqr <= (cutoff * cutoff)){
-              if(calcMode == 0){
-                if(p_real == 1){
+                p_dist.x = p_pos.x - pos[currentCellOffset + j].x;
+                p_dist.y = p_pos.y - pos[currentCellOffset + j].y;
+                p_dist.z = p_pos.z - pos[currentCellOffset + j].z;
+                distSqr = 0.0;
+                distSqr += p_dist.x * p_dist.x;
+                distSqr += p_dist.y * p_dist.y;
+                distSqr += p_dist.z * p_dist.z;
+
+                if(distSqr <= (cutoff * cutoff)){
                   gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
-
+                  p_numForceCalc++;
                   test_force.x += p_force.x;
                   test_force.y += p_force.y;
                   test_force.z += p_force.z;
@@ -118,26 +113,60 @@ namespace espressopp {
                   p_force.z = 0;
                 }
               }
+              //__syncthreads();
+            }
+           // __syncthreads();
+          }
+//*/
+/*
+        }
+      for(int i = 0; i < nPart; i++){
+        if(i != idx){
+          distSqr = 0.0;
+          p_dist.x = p_pos.x - pos[i].x;
+          p_dist.y = p_pos.y - pos[i].y;
+          p_dist.z = p_pos.z - pos[i].z;
+          distSqr += p_dist.x * p_dist.x;
+          distSqr += p_dist.y * p_dist.y;
+          distSqr += p_dist.z * p_dist.z;
+          
+          if(distSqr <= (cutoff * cutoff)){
+            if(calcMode == 0){
+              if(p_real == 1){
+                gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
+                p_numForceCalc++;
+                test_force.x += p_force.x;
+                test_force.y += p_force.y;
+                test_force.z += p_force.z;
+
+                p_force.x = 0;
+                p_force.y = 0;
+                p_force.z = 0;
+              }
             }
           }
-
-          if(calcMode == 1){
-            p_energy += potential._computeEnergySqrRaw(distSqr);
-          }
-
         }
-      
+      }
+      */
+    }
+
+        if(calcMode == 1){
+          p_energy += potential._computeEnergySqrRaw(distSqr);
+        }
+
         if(calcMode == 0){
           force[idx].x = p_real * test_force.x;
           force[idx].y = p_real * test_force.y;
           force[idx].z = p_real * test_force.z;
         }
-
+  
         if(calcMode == 1){
           energy[idx] = p_energy;
         }
       }
-      __syncthreads();
+
+
+      //__syncthreads();
 
     }
 
@@ -155,7 +184,7 @@ namespace espressopp {
 */
   double LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
     //printf("cutof: %f\n", gpuPots[0].sigma);
-    int numThreads = 128;
+    int numThreads = 256;
     int numBlocks = (gpuStorage->numberLocalParticles) / numThreads + 1;
     double *h_energy; 
     double *d_energy;
@@ -163,7 +192,7 @@ namespace espressopp {
 
     h_energy = new double[gpuStorage->numberLocalParticles];
     cudaMalloc(&d_energy, sizeof(double) * gpuStorage->numberLocalParticles);
-    //printf("Particle: %d, numBlocks: %d\n", gpuStorage->numberLocalParticles, numBlocks);
+    //printf("numLocalCells: %d, Particles: %d, numBlocks: %d, numThreads: %d\n", gpuStorage->numberLocalCells, gpuStorage->numberLocalParticles, numBlocks, numBlocks*numThreads);
     testKernel<<<numBlocks, numThreads>>>(
                             gpuStorage->numberLocalParticles, 
                             gpuStorage->numberLocalCells, 
@@ -176,8 +205,8 @@ namespace espressopp {
                             gpuStorage->d_type,
                             gpuStorage->d_real,
                             gpuStorage->d_particlesCell,
-                            gpuStorage->d_cellNeighbors,
                             gpuStorage->d_cellOffsets,
+                            gpuStorage->d_cellNeighbors,
                             d_energy,
                             gpuPots,
                             mode

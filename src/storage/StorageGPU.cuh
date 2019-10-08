@@ -30,12 +30,8 @@ void gpu_resizeParticleData(    int N,
 
 
 void gpu_h2dCellData(   int M, 
-                        int **d_cellOffsets, 
-                        int **d_particlesCell, 
-                        int **d_cellNeighbors,
-                        int *h_cellOffsets, 
-                        int *h_particlesCell,
-                        int *h_cellNeighbors
+                        int *h_cellNeighbors,
+                        int **d_cellNeighbors
                     ); 
 
 void gpu_resizeCellData(  int N,
@@ -49,7 +45,8 @@ void gpu_h2dParticleVars(   int N,
                             double3 **d_pos
                         );
 
-void gpu_h2dParticleStatics(    int N,
+void gpu_h2dParticleStatics(    int nLocalParticles,
+                                int nLocalCells,
                                 int *h_cellId,
                                 int **d_cellId,
                                 int *h_id,
@@ -61,8 +58,12 @@ void gpu_h2dParticleStatics(    int N,
                                 double *h_mass,
                                 double **d_mass,
                                 bool *h_real,
-                                bool **d_real
-                                );
+                                bool **d_real,
+                                int *h_cellOffsets,
+                                int **d_cellOffsets,
+                                int *h_particlesCell,
+                                int **d_particlesCell
+                            );
 
 void gpu_d2hParticleForces( int N,
                             double3 *h_force,

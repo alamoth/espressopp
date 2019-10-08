@@ -41,16 +41,13 @@
 
     void StorageGPU::h2dCellData(){
         gpu_h2dCellData(    numberLocalCells,
-                            &d_cellOffsets,
-                            &d_particlesCell,
-                            &d_cellNeighbors,
-                            h_cellOffsets,
-                            h_particlesCell,
-                            h_cellNeighbors);
+                            h_cellNeighbors,
+                            &d_cellNeighbors);
     }
     
     void StorageGPU::h2dParticleStatics(){
         gpu_h2dParticleStatics( numberLocalParticles,
+                                numberLocalCells,
                                 h_cellId,
                                 &d_cellId,
                                 h_id,
@@ -62,7 +59,11 @@
                                 h_mass,
                                 &d_mass,
                                 h_real,
-                                &d_real);
+                                &d_real,
+                                h_cellOffsets,
+                                &d_cellOffsets,
+                                h_particlesCell,
+                                &d_particlesCell);
     }
 
     void StorageGPU::h2dParticleVars(){

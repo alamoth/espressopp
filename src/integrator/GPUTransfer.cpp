@@ -87,12 +87,14 @@ namespace espressopp {
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         realCell = localCells[i]->neighborCells.size() == 0 ? false : true;
         if(realCell){
+          //printf("Real cell at i: %d, id: %d\n", i, localCells[i]->id);
+          //printf("h_cellNeighbors[%d] = %d\n", i * 27, localCells[i]->id);
           GPUStorage->h_cellNeighbors[i * 27] = localCells[i]->id;
           for(unsigned int j = 0; j < 26; ++j){
             GPUStorage->h_cellNeighbors[i * 27 + j + 1] = localCells[i]->neighborCells[j].cell->id;
           }
         }
-        counterParticles += localCells[i]->particles.size();
+        counterParticles += localCells[i]->particles.size(); // needed?
       }
       GPUStorage->h2dCellData();
     }
@@ -123,7 +125,8 @@ namespace espressopp {
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         realParticle = localCells[i]->neighborCells.size() == 0 ? false : true;
         GPUStorage->h_cellOffsets[i] = counterParticles;
-        GPUStorage->h_particlesCell[i] = localCells[i]->neighborCells.size();
+        GPUStorage->h_particlesCell[i] = localCells[i]->particles.size();
+        //printf("Offset[%d]: %d, cellParticles[%d]=%d\n",i,counterParticles,i, localCells[i]->particles.size());
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           Particle &p = localCells[i]->particles[j];
           GPUStorage->h_id[counterParticles] = p.getId();

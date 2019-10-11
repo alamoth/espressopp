@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include "LennardJonesGPU.cuh"
 #include <math.h>
-#include "Tensor.hpp"
 
 
 using namespace std;

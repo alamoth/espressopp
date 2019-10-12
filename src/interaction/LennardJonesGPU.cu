@@ -62,12 +62,12 @@ namespace espressopp {
 
       __shared__ double cutoff;
       __shared__ int calcMode;
-      __shared__ d_LennardJonesGPU potential;
+      //__shared__ d_LennardJonesGPU potential;
 
       if(threadIdx.x == 0){
         cutoff = gpuPots[0].getCutoff();
         calcMode = mode;
-        potential = gpuPots[0];
+        //potential = gpuPots[0];
       }
       __syncthreads();
 
@@ -80,12 +80,11 @@ namespace espressopp {
         int p_type = type[idx];
         int p_real = real[idx] ? 1 : 0;
         int p_cellId = cellId[idx];
-        double3 p_force = make_double3(0.0,0.0,0.0);
+        //double3 p_force = make_double3(0.0,0.0,0.0);
         double3 test_force = make_double3(0.0,0.0,0.0);
         double3 p_dist;
         double distSqr;
         double p_energy = 0;
-        int p_numForceCalc = 0;
         if(p_real == 1){
           ///*
           for(int i = 0; i < 27; i++){
@@ -104,25 +103,35 @@ namespace espressopp {
 
                 if(distSqr <= (cutoff * cutoff)){
                   if(calcMode == 0){
-                    gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
-                    p_numForceCalc++;
-                    test_force.x += p_force.x;
-                    test_force.y += p_force.y;
-                    test_force.z += p_force.z;
+                    //gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
+                    double frac2 = 1.0 / distSqr;
+                    double frac6 = frac2 * frac2 * frac2;
+                    //double ffactor = frac6 * (gpuPots[0].ff1 * frac6 - gpuPots[0].ff2) * frac2;
+                    double ffactor = frac6 * (48 * frac6 - 24) * frac2;
+                    test_force.x += p_dist.x * ffactor;
+                    test_force.y += p_dist.y * ffactor;
+                    test_force.z += p_dist.z * ffactor;
+                    //test_force.x += p_force.x;
+                    //test_force.y += p_force.y;
+                    //test_force.z += p_force.z;
   
-                    p_force.x = 0;
-                    p_force.y = 0;
-                    p_force.z = 0;
+                    //p_force.x = 0;
+                    //p_force.y = 0;
+                    //p_force.z = 0;
                   }
                   if(calcMode == 1){
-                    p_energy += potential._computeEnergySqrRaw(distSqr);
+                    //double frac2 = sigma*sigma / distSqr;
+                    double frac2 = 1.0 * 1.0 / distSqr;
+                    double frac6 = frac2 * frac2 * frac2;
+                    //double energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
+                    double energy = 4.0 * 1.0 * (frac6 * frac6 - frac6);
+                    p_energy += energy;
+                    //p_energy += potential._computeEnergySqrRaw(distSqr);
                   }
 
                 }
               }
-              //__syncthreads();
             }
-           //cd  __syncthreads();
           }
 //*/
 /*
@@ -154,9 +163,9 @@ namespace espressopp {
           }
         }
       }
-      */
-    }
-
+*/
+        }
+        __syncthreads();
         if(calcMode == 0){
           force[idx].x = p_real * test_force.x;
           force[idx].y = p_real * test_force.y;
@@ -167,26 +176,10 @@ namespace espressopp {
           energy[idx] = p_energy;
         }
       }
-
-
-      //__syncthreads();
-
     }
 
-/*
-    void LJGPUdriver( int nPart,
-                      int nCells,
-                      double3* pos, 
-                      double3* force,
-                      double* mass,
-                      double* drift,
-                      int* type,
-                      int* cellOff,
-                      int* numCellN,
-                      d_LennardJonesGPU* gpuPots){
-*/
+
   double LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
-    //printf("cutof: %f\n", gpuPots[0].sigma);
     int numThreads = 256;
     int numBlocks = (gpuStorage->numberLocalParticles) / numThreads + 1;
     double *h_energy; 

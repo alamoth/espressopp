@@ -236,7 +236,7 @@ system.removeInteraction(0)
 # verlet list is not needed any more and would waste only CPU time
 verletlist.disconnect()
 
-espressopp.tools.writexyz("32768Eq", system, velocities = False, unfolded = False)
+#espressopp.tools.writexyz("32768Eq", system, velocities = False, unfolded = False)
 
 
 ########################################################################

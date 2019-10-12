@@ -54,6 +54,12 @@ add_library(_espressopp ${ESPRESSO_SOURCES})
 
 #cuda
 target_compile_features(_espressopp PUBLIC cxx_std_11)
+target_compile_options(_espressopp PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
+                           --generate-line-info
+                           --use_fast_math
+                           --relocatable-device-code=true
+                           -gencode=arch=compute_30,code=compute_30
+                           >)
 set_target_properties(_espressopp PROPERTIES CUDA_SEPERABLE_COMPILATION ON)
 
 target_link_libraries(_espressopp ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${MPI_LIBRARIES} ${FFTW3_LIBRARIES} ${VAMPIRTRACE_LIBRARIES})

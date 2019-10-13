@@ -177,8 +177,8 @@ if (temperature != None):
   # tell the integrator to use this thermostat
   integrator.addExtension(thermostat)
 
-GPUSupport = espressopp.integrator.GPUTransfer(system)
-integrator.addExtension(GPUSupport)
+#GPUSupport = espressopp.integrator.GPUTransfer(system)
+#integrator.addExtension(GPUSupport)
 
 ## steps 2. and 3. could be short-cut by the following expression:
 ## system, integrator = espressopp.standard_system.Default(box, warmup_cutoff, skin, dt, temperature)

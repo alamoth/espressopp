@@ -62,7 +62,6 @@ namespace espressopp {
 
       __shared__ double cutoff;
       __shared__ int calcMode;
-      //__shared__ d_LennardJonesGPU potential;
 
       if(threadIdx.x == 0){
         cutoff = gpuPots[0].getCutoff();
@@ -70,8 +69,6 @@ namespace espressopp {
         //potential = gpuPots[0];
       }
       __syncthreads();
-
-      
 
       if(idx < nPart){
         double3 p_pos = pos[idx];
@@ -96,10 +93,7 @@ namespace espressopp {
                 p_dist.x = p_pos.x - pos[currentCellOffset + j].x;
                 p_dist.y = p_pos.y - pos[currentCellOffset + j].y;
                 p_dist.z = p_pos.z - pos[currentCellOffset + j].z;
-                distSqr = 0.0;
-                distSqr += p_dist.x * p_dist.x;
-                distSqr += p_dist.y * p_dist.y;
-                distSqr += p_dist.z * p_dist.z;
+                distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
 
                 if(distSqr <= (cutoff * cutoff)){
                   if(calcMode == 0){
@@ -128,41 +122,47 @@ namespace espressopp {
                     p_energy += energy;
                     //p_energy += potential._computeEnergySqrRaw(distSqr);
                   }
-
                 }
               }
             }
           }
 //*/
 /*
-        }
-      for(int i = 0; i < nPart; i++){
-        if(i != idx){
-          distSqr = 0.0;
-          p_dist.x = p_pos.x - pos[i].x;
-          p_dist.y = p_pos.y - pos[i].y;
-          p_dist.z = p_pos.z - pos[i].z;
-          distSqr += p_dist.x * p_dist.x;
-          distSqr += p_dist.y * p_dist.y;
-          distSqr += p_dist.z * p_dist.z;
-          
-          if(distSqr <= (cutoff * cutoff)){
-            if(calcMode == 0){
-              if(p_real == 1){
-                gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
-                p_numForceCalc++;
-                test_force.x += p_force.x;
-                test_force.y += p_force.y;
-                test_force.z += p_force.z;
-
-                p_force.x = 0;
-                p_force.y = 0;
-                p_force.z = 0;
+          for(int i = 0; i < nPart; i++){
+            if(i != idx){
+              distSqr = 0.0;
+              p_dist.x = p_pos.x - pos[i].x;
+              p_dist.y = p_pos.y - pos[i].y;
+              p_dist.z = p_pos.z - pos[i].z;
+              distSqr += p_dist.x * p_dist.x;
+              distSqr += p_dist.y * p_dist.y;
+              distSqr += p_dist.z * p_dist.z;
+              
+              if(distSqr <= (cutoff * cutoff)){
+                if(calcMode == 0){
+                  //gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
+                  double frac2 = 1.0 / distSqr;
+                  double frac6 = frac2 * frac2 * frac2;
+                  //double ffactor = frac6 * (gpuPots[0].ff1 * frac6 - gpuPots[0].ff2) * frac2;
+                  double ffactor = frac6 * (48 * frac6 - 24) * frac2;
+                  test_force.x += p_dist.x * ffactor;
+                  test_force.y += p_dist.y * ffactor;
+                  test_force.z += p_dist.z * ffactor;
+                }
+                if(calcMode == 1){
+                  //double frac2 = sigma*sigma / distSqr;
+                  double frac2 = 1.0 * 1.0 / distSqr;
+                  double frac6 = frac2 * frac2 * frac2;
+                  //double energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
+                  double energy = 4.0 * 1.0 * (frac6 * frac6 - frac6);
+                  p_energy += energy;
+                  //p_energy += potential._computeEnergySqrRaw(distSqr);
+                }
               }
+            } else {
+              //printf("Pos1: %f %f %f, pos2: %f, %f, %f\n", p_pos.x, p_pos.y, p_pos.z, pos[i].x, pos[i].y, pos[i].z);
             }
           }
-        }
-      }
 */
         }
         __syncthreads();
@@ -180,7 +180,7 @@ namespace espressopp {
 
 
   double LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
-    int numThreads = 256;
+    int numThreads = 128;
     int numBlocks = (gpuStorage->numberLocalParticles) / numThreads + 1;
     double *h_energy; 
     double *d_energy;

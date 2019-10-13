@@ -3,6 +3,8 @@ Makefile
 *.o
 *.so
 *.pyc
+*.xyz
+*.pdb
 COPYING
 INSTALL
 ESPRC

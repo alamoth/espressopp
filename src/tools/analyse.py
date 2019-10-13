@@ -42,7 +42,7 @@ def info(system, integrator, per_atom=False):
     e       = system.getInteraction(k).computeEnergy()
     Etotal += e
     if per_atom:
-      tot    += ' %12.8f' % (e/NPart)
+      tot    += ' %12.10f' % (e/NPart)
       tt     += '     e%i/N    ' % k
     else:
       tot    += ' %12.3f' % e
@@ -52,7 +52,7 @@ def info(system, integrator, per_atom=False):
     tot += ' %12.8f' % (Etotal/NPart + Ek/NPart)
     tt  += '   etotal/N  '
   else:
-    tot += ' %12.3f' % (Etotal + Ek)
+    tot += ' %12.10f' % (Etotal + Ek)
     tt  += '    etotal   '
   tot += ' %12.8f\n' % system.bc.boxL[0]
   tt  += '    boxL     \n'

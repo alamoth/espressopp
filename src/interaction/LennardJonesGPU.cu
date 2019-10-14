@@ -46,21 +46,21 @@ namespace espressopp {
                 int nCells,
                 int* id,
                 int* cellId,
-                double3* pos,
-                double3* force,
-                double* mass,
-                double* drift,
+                realG3* pos,
+                realG3* force,
+                realG* mass,
+                realG* drift,
                 int* type,
                 bool* real,
                 int* cellParticles, 
                 int* cellOffsets,
                 int* cellNeighbors,
-                double* energy,
+                realG* energy,
                 d_LennardJonesGPU* gpuPots,
                 int mode){
       int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-      __shared__ double cutoff;
+      __shared__ realG cutoff;
       __shared__ int calcMode;
 
       if(threadIdx.x == 0){
@@ -71,20 +71,19 @@ namespace espressopp {
       __syncthreads();
 
       if(idx < nPart){
-        double3 p_pos = pos[idx];
-        double p_mass = mass[idx];
-        double p_drift = drift[idx];
+        realG3 p_pos = pos[idx];
+        realG p_mass = mass[idx];
+        realG p_drift = drift[idx];
         int p_type = type[idx];
         int p_real = real[idx] ? 1 : 0;
         int p_cellId = cellId[idx];
-        //double3 p_force = make_double3(0.0,0.0,0.0);
-        double3 test_force = make_double3(0.0,0.0,0.0);
-        double3 p_dist;
-        double distSqr;
-        double p_energy = 0;
+        realG3 p_force = make_realG3(0.0,0.0,0.0);
+        realG3 p_dist;
+        realG distSqr;
+        realG p_energy = 0;
         if(p_real == 1){
           ///*
-          for(int i = 0; i < 27; i++){
+          for(int i = 0; i < 27; ++i){
             int currentCellId = cellNeighbors[p_cellId * 27 + i];
             for(int j = 0; j < cellParticles[currentCellId]; ++j){
               int currentCellOffset = cellOffsets[currentCellId];
@@ -93,32 +92,27 @@ namespace espressopp {
                 p_dist.x = p_pos.x - pos[currentCellOffset + j].x;
                 p_dist.y = p_pos.y - pos[currentCellOffset + j].y;
                 p_dist.z = p_pos.z - pos[currentCellOffset + j].z;
-                distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
+                distSqr =  p_dist.x * p_dist.x;
+                distSqr += p_dist.y * p_dist.y; 
+                distSqr += p_dist.z * p_dist.z;
 
                 if(distSqr <= (cutoff * cutoff)){
                   if(calcMode == 0){
                     //gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
-                    double frac2 = 1.0 / distSqr;
-                    double frac6 = frac2 * frac2 * frac2;
-                    //double ffactor = frac6 * (gpuPots[0].ff1 * frac6 - gpuPots[0].ff2) * frac2;
-                    double ffactor = frac6 * (48 * frac6 - 24) * frac2;
-                    test_force.x += p_dist.x * ffactor;
-                    test_force.y += p_dist.y * ffactor;
-                    test_force.z += p_dist.z * ffactor;
-                    //test_force.x += p_force.x;
-                    //test_force.y += p_force.y;
-                    //test_force.z += p_force.z;
-  
-                    //p_force.x = 0;
-                    //p_force.y = 0;
-                    //p_force.z = 0;
+                    realG frac2 = 1.0 / distSqr;
+                    realG frac6 = frac2 * frac2 * frac2;
+                    //realG ffactor = frac6 * (gpuPots[0].ff1 * frac6 - gpuPots[0].ff2) * frac2;
+                    realG ffactor = frac6 * (48 * frac6 - 24) * frac2;
+                    p_force.x += p_dist.x * ffactor;
+                    p_force.y += p_dist.y * ffactor;
+                    p_force.z += p_dist.z * ffactor;
                   }
                   if(calcMode == 1){
-                    //double frac2 = sigma*sigma / distSqr;
-                    double frac2 = 1.0 * 1.0 / distSqr;
-                    double frac6 = frac2 * frac2 * frac2;
-                    //double energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
-                    double energy = 4.0 * 1.0 * (frac6 * frac6 - frac6);
+                    //realG frac2 = sigma*sigma / distSqr;
+                    realG frac2 = 1.0 * 1.0 / distSqr;
+                    realG frac6 = frac2 * frac2 * frac2;
+                    //realG energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
+                    realG energy = 4.0 * 1.0 * (frac6 * frac6 - frac6);
                     p_energy += energy;
                     //p_energy += potential._computeEnergySqrRaw(distSqr);
                   }
@@ -126,50 +120,11 @@ namespace espressopp {
               }
             }
           }
-//*/
-/*
-          for(int i = 0; i < nPart; i++){
-            if(i != idx){
-              distSqr = 0.0;
-              p_dist.x = p_pos.x - pos[i].x;
-              p_dist.y = p_pos.y - pos[i].y;
-              p_dist.z = p_pos.z - pos[i].z;
-              distSqr += p_dist.x * p_dist.x;
-              distSqr += p_dist.y * p_dist.y;
-              distSqr += p_dist.z * p_dist.z;
-              
-              if(distSqr <= (cutoff * cutoff)){
-                if(calcMode == 0){
-                  //gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
-                  double frac2 = 1.0 / distSqr;
-                  double frac6 = frac2 * frac2 * frac2;
-                  //double ffactor = frac6 * (gpuPots[0].ff1 * frac6 - gpuPots[0].ff2) * frac2;
-                  double ffactor = frac6 * (48 * frac6 - 24) * frac2;
-                  test_force.x += p_dist.x * ffactor;
-                  test_force.y += p_dist.y * ffactor;
-                  test_force.z += p_dist.z * ffactor;
-                }
-                if(calcMode == 1){
-                  //double frac2 = sigma*sigma / distSqr;
-                  double frac2 = 1.0 * 1.0 / distSqr;
-                  double frac6 = frac2 * frac2 * frac2;
-                  //double energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
-                  double energy = 4.0 * 1.0 * (frac6 * frac6 - frac6);
-                  p_energy += energy;
-                  //p_energy += potential._computeEnergySqrRaw(distSqr);
-                }
-              }
-            } else {
-              //printf("Pos1: %f %f %f, pos2: %f, %f, %f\n", p_pos.x, p_pos.y, p_pos.z, pos[i].x, pos[i].y, pos[i].z);
-            }
-          }
-*/
         }
-        __syncthreads();
         if(calcMode == 0){
-          force[idx].x = p_real * test_force.x;
-          force[idx].y = p_real * test_force.y;
-          force[idx].z = p_real * test_force.z;
+          force[idx].x = p_real * p_force.x;
+          force[idx].y = p_real * p_force.y;
+          force[idx].z = p_real * p_force.z;
         }
   
         if(calcMode == 1){
@@ -179,15 +134,15 @@ namespace espressopp {
     }
 
 
-  double LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
+  realG LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
     int numThreads = 128;
     int numBlocks = (gpuStorage->numberLocalParticles) / numThreads + 1;
-    double *h_energy; 
-    double *d_energy;
-    double totalEnergy = 0;
+    realG *h_energy; 
+    realG *d_energy;
+    realG totalEnergy = 0;
 
-    h_energy = new double[gpuStorage->numberLocalParticles];
-    cudaMalloc(&d_energy, sizeof(double) * gpuStorage->numberLocalParticles);
+    h_energy = new realG[gpuStorage->numberLocalParticles];
+    cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles);
     //printf("numLocalCells: %d, Particles: %d, numBlocks: %d, numThreads: %d\n", gpuStorage->numberLocalCells, gpuStorage->numberLocalParticles, numBlocks, numBlocks*numThreads);
     testKernel<<<numBlocks, numThreads>>>(
                             gpuStorage->numberLocalParticles, 
@@ -211,8 +166,8 @@ namespace espressopp {
 
       //printf("---\n");
       if(mode == 1) {
-        cudaMemcpy(h_energy, d_energy, sizeof(double) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost);
-        for (int i = 0; i < gpuStorage->numberLocalParticles; i++){
+        cudaMemcpy(h_energy, d_energy, sizeof(realG) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost);
+        for (int i = 0; i < gpuStorage->numberLocalParticles; ++i){
           totalEnergy += h_energy[i];
         }
       }

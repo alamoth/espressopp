@@ -1,12 +1,9 @@
-
 #ifndef _STORAGE_GPU_HPP
 #define _STORAGE_GPU_HPP
 #include "StorageGPU.cuh"
 #include <vector>
 #include <cuda_runtime.h>
 #include <stdio.h>
-
-
 
 class StorageGPU {
     public:
@@ -16,13 +13,13 @@ class StorageGPU {
         int numberLocalParticles = 0;
         int numberLocalCells = 0;
 
-        double3 *d_pos = 0;
-        double3 *h_pos = 0;
-        double3 *um_pos = 0;
+        realG3 *d_pos = 0;
+        realG3 *h_pos = 0;
+        realG3 *um_pos = 0;
 
-        double3 *d_force = 0;
-        double3 *h_force = 0;
-        double3 *um_force = 0;
+        realG3 *d_force = 0;
+        realG3 *h_force = 0;
+        realG3 *um_force = 0;
 
         int *h_id = 0;
         int *d_id = 0;
@@ -36,13 +33,13 @@ class StorageGPU {
         int *d_type = 0;
         int *um_type = 0;
 
-        double *h_mass  = 0; 
-        double *d_mass = 0;
-        double *um_mass = 0;
+        realG *h_mass  = 0; 
+        realG *d_mass = 0;
+        realG *um_mass = 0;
 
-        double *h_drift = 0;
-        double *d_drift = 0;
-        double *um_drift = 0;
+        realG *h_drift = 0;
+        realG *d_drift = 0;
+        realG *um_drift = 0;
 
         bool *h_real = 0;
         bool *d_real = 0;

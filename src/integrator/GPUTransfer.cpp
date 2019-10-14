@@ -153,7 +153,7 @@ namespace espressopp {
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           Real3D pos = localCells[i]->particles[j].getPos();
-          GPUStorage->h_pos[counterParticles] = make_double3(pos.at(0), pos.at(1), pos.at(2)); 
+          GPUStorage->h_pos[counterParticles] = make_realG3(pos.at(0), pos.at(1), pos.at(2)); 
           counterParticles++;
         }
       }
@@ -172,7 +172,7 @@ namespace espressopp {
 
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
-          double3 force3 = GPUStorage->h_force[counterParticles];
+          realG3 force3 = GPUStorage->h_force[counterParticles];
           Real3D force3D(force3.x, force3.y, force3.z);
           Particle &p = localCells[i]->particles[j];
           p.force() += force3D;

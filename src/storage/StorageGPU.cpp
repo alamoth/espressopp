@@ -18,12 +18,12 @@
         h_cellId = new int[numberLocalParticles];
         h_id = new int[numberLocalParticles];
         h_type = new int[numberLocalParticles];
-        h_drift = new double[numberLocalParticles];
-        h_mass = new double[numberLocalParticles];
+        h_drift = new realG[numberLocalParticles];
+        h_mass = new realG[numberLocalParticles];
         h_real = new bool[numberLocalParticles];
 
-        h_pos = new double3[numberLocalParticles];
-        h_force = new double3[numberLocalParticles];
+        h_pos = new realG3[numberLocalParticles];
+        h_force = new realG3[numberLocalParticles];
 
         gpu_resizeParticleData(numberLocalParticles, &d_cellId, &d_id, &d_type, &d_drift, &d_mass, &d_pos, &d_force, &d_real);
     }

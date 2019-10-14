@@ -39,11 +39,11 @@ namespace espressopp {
     class d_LennardJonesGPU {
     public:
 
-      double epsilon;
-      double sigma;
-      double ff1, ff2;
-      double ef1, ef2;
-      double cutoff;
+      realG epsilon;
+      realG sigma;
+      realG ff1, ff2;
+      realG ef1, ef2;
+      realG cutoff;
 
       
     //public:
@@ -52,7 +52,7 @@ namespace espressopp {
           preset();
       }
 
-      d_LennardJonesGPU(double _epsilon, double _sigma) {
+      d_LennardJonesGPU(realG _epsilon, realG _sigma) {
           preset();
       }
       
@@ -60,8 +60,8 @@ namespace espressopp {
 
       __device__ __host__ 
       void preset() {
-        double sig2 = sigma * sigma;
-        double sig6 = sig2 * sig2 * sig2;
+        realG sig2 = sigma * sigma;
+        realG sig6 = sig2 * sig2 * sig2;
         ff1 = 48.0 * epsilon * sig6 * sig6;
         ff2 = 24.0 * epsilon * sig6;
         ef1 =  4.0 * epsilon * sig6 * sig6;
@@ -69,45 +69,45 @@ namespace espressopp {
       }
 
       // Setter and getter
-      void setEpsilon(double _epsilon) {
+      void setEpsilon(realG _epsilon) {
         epsilon = _epsilon;
         preset();
       }
 
       __device__ __host__ 
-      double getEpsilon() const { return epsilon; }
+      realG getEpsilon() const { return epsilon; }
 
-      void setSigma(double _sigma) { 
+      void setSigma(realG _sigma) { 
         sigma = _sigma; 
         preset();
       }
 
       __device__ __host__ 
-      double getSigma() const { return sigma; }
+      realG getSigma() const { return sigma; }
       
-      void setCutoff(double _cutoff) {
+      void setCutoff(realG _cutoff) {
         cutoff = _cutoff;
         preset();
       }
 
       __device__ __host__
-      double getCutoff() const { return cutoff; }
+      realG getCutoff() const { return cutoff; }
 
       __device__ __host__ 
-      void _computeForceRaw(double3& force, const double3& dist, double distSqr){
-        double frac2 = 1.0 / distSqr;
-        double frac6 = frac2 * frac2 * frac2;
-        double ffactor = frac6 * (ff1 * frac6 - ff2) * frac2;
+      void _computeForceRaw(realG3& force, const realG3& dist, realG distSqr){
+        realG frac2 = 1.0 / distSqr;
+        realG frac6 = frac2 * frac2 * frac2;
+        realG ffactor = frac6 * (ff1 * frac6 - ff2) * frac2;
         force.x += dist.x * ffactor;
         force.y += dist.y * ffactor;
         force.z += dist.z * ffactor;
       }
 
       __device__ __host__ 
-      double _computeEnergySqrRaw(double distSqr){
-        double frac2 = sigma*sigma / distSqr;
-        double frac6 = frac2 * frac2 * frac2;
-        double energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
+      realG _computeEnergySqrRaw(realG distSqr){
+        realG frac2 = sigma*sigma / distSqr;
+        realG frac6 = frac2 * frac2 * frac2;
+        realG energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
         
         return energy;
       }
@@ -115,16 +115,16 @@ namespace espressopp {
   /*
     void LJGPUdriver( int nPart,
                       int nCells,
-                      double3* pos, 
-                      double3* force,
-                      double* mass,
-                      double* drift,
+                      realG3* pos, 
+                      realG3* force,
+                      realG* mass,
+                      realG* drift,
                       int* type,
                       int* cellOff,
                       int* numCellN,
                       d_LennardJonesGPU* gpuPots);
                       */
-    double LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode);
+    realG LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode);
   }
 }
 

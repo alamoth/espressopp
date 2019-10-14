@@ -1,3 +1,7 @@
+#define realG double
+#define realG3 double3
+#define make_realG3 make_double3
+
 #ifndef __STORAGE_GPU_CUH
 #define __STORAGE_GPU_CUH
 #include <cuda_runtime.h>
@@ -6,8 +10,8 @@ typedef struct {
     int numberParticles;
     int *cellId;
     int *type;
-    double *mass;
-    double *drift;
+    realG *mass;
+    realG *drift;
     bool *real;
 } particleStatics;
 
@@ -21,10 +25,10 @@ void gpu_resizeParticleData(    int N,
                                 int **d_cellId,
                                 int **d_id,
                                 int **d_type, 
-                                double **d_drift,
-                                double **d_mass, 
-                                double3 **d_pos,
-                                double3 **d_force,
+                                realG **d_drift,
+                                realG **d_mass, 
+                                realG3 **d_pos,
+                                realG3 **d_force,
                                 bool **d_real
                             );
 
@@ -41,8 +45,8 @@ void gpu_resizeCellData(  int N,
 
 
 void gpu_h2dParticleVars(   int N,
-                            double3 *h_pos,
-                            double3 **d_pos
+                            realG3 *h_pos,
+                            realG3 **d_pos
                         );
 
 void gpu_h2dParticleStatics(    int nLocalParticles,
@@ -53,10 +57,10 @@ void gpu_h2dParticleStatics(    int nLocalParticles,
                                 int **d_id,
                                 int *h_type,
                                 int **d_type,
-                                double *h_drift,
-                                double **d_drift,
-                                double *h_mass,
-                                double **d_mass,
+                                realG *h_drift,
+                                realG **d_drift,
+                                realG *h_mass,
+                                realG **d_mass,
                                 bool *h_real,
                                 bool **d_real,
                                 int *h_cellOffsets,
@@ -66,8 +70,8 @@ void gpu_h2dParticleStatics(    int nLocalParticles,
                             );
 
 void gpu_d2hParticleForces( int N,
-                            double3 *h_force,
-                            double3 **d_force
+                            realG3 *h_force,
+                            realG3 **d_force
                         );
                            
 #endif                            

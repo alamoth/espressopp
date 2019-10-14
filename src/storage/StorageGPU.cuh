@@ -1,6 +1,8 @@
 #define realG double
 #define realG3 double3
+#define realG4 double4
 #define make_realG3 make_double3
+#define make_realG4 make_double4
 
 #ifndef __STORAGE_GPU_CUH
 #define __STORAGE_GPU_CUH

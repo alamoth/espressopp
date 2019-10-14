@@ -57,77 +57,93 @@ namespace espressopp {
                 int* cellNeighbors,
                 realG* energy,
                 d_LennardJonesGPU* gpuPots,
+                int numPots,
                 int mode){
       int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-      __shared__ realG cutoff;
+      extern __shared__ char parameter[];
+      realG *s_cutoff = (realG*) &parameter[0];
+      realG *s_sigma = (realG*) &parameter[sizeof(realG) * numPots];
+      realG *s_epsilon = (realG*) &parameter[sizeof(realG) * 2 * numPots];
+      realG *s_ff1 = (realG*) &parameter[sizeof(realG) * 3 * numPots];
+      realG *s_ff2 = (realG*) &parameter[sizeof(realG) * 4 * numPots];
+      /*
+      __shared__ realG[10] cutoff;
+      __shared__ realG[10] sigma;
+      __shared__ realG[10] epsilon;
+      __shared__ realG[10] ff1;
+      __shared__ realG[10] ff2;
       __shared__ int calcMode;
-
+      */
       if(threadIdx.x == 0){
-        cutoff = gpuPots[0].getCutoff();
-        calcMode = mode;
-        //potential = gpuPots[0];
+        for(int i = 0; i < numPots; ++i){
+          s_cutoff[i] = gpuPots[i].cutoff;
+          s_sigma[i] = gpuPots[i].sigma;
+          s_epsilon[i] = gpuPots[i].epsilon;
+          s_ff1[i] = gpuPots[i].ff1;
+          s_ff2[i] = gpuPots[i].ff2;
+        }
       }
       __syncthreads();
 
       if(idx < nPart){
-        realG3 p_pos = pos[idx];
-        realG p_mass = mass[idx];
-        realG p_drift = drift[idx];
-        int p_type = type[idx];
-        int p_real = real[idx] ? 1 : 0;
+        realG3 p_pos;
+        p_pos.x = pos[idx].x;
+        p_pos.y = pos[idx].y;
+        p_pos.z = pos[idx].z;        
+        //realG p_mass = mass[idx];
+        //realG p_drift = drift[idx];
+        //int p_type = type[idx];
+        //int p_real = real[idx] ? 1 : 0;
         int p_cellId = cellId[idx];
         realG3 p_force = make_realG3(0.0,0.0,0.0);
         realG3 p_dist;
         realG distSqr;
         realG p_energy = 0;
-        if(p_real == 1){
-          ///*
+        if(real[idx]){
           for(int i = 0; i < 27; ++i){
             int currentCellId = cellNeighbors[p_cellId * 27 + i];
             for(int j = 0; j < cellParticles[currentCellId]; ++j){
               int currentCellOffset = cellOffsets[currentCellId];
               if(currentCellOffset + j != idx){
-
                 p_dist.x = p_pos.x - pos[currentCellOffset + j].x;
                 p_dist.y = p_pos.y - pos[currentCellOffset + j].y;
                 p_dist.z = p_pos.z - pos[currentCellOffset + j].z;
                 distSqr =  p_dist.x * p_dist.x;
-                distSqr += p_dist.y * p_dist.y; 
+                distSqr += p_dist.y * p_dist.y;
                 distSqr += p_dist.z * p_dist.z;
+                // Type check here
 
-                if(distSqr <= (cutoff * cutoff)){
-                  if(calcMode == 0){
-                    //gpuPots[0]._computeForceRaw(p_force, p_dist, distSqr);
+                if(distSqr <= (s_cutoff[0] * s_cutoff[0])){
+                  if(mode == 0){
                     realG frac2 = 1.0 / distSqr;
                     realG frac6 = frac2 * frac2 * frac2;
-                    //realG ffactor = frac6 * (gpuPots[0].ff1 * frac6 - gpuPots[0].ff2) * frac2;
-                    realG ffactor = frac6 * (48 * frac6 - 24) * frac2;
+                    realG ffactor = frac6 * (s_ff1[0] * frac6 - s_ff2[0]) * frac2;
+                    //realG ffactor = frac6 * (48 * frac6 - 24) * frac2;
                     p_force.x += p_dist.x * ffactor;
                     p_force.y += p_dist.y * ffactor;
                     p_force.z += p_dist.z * ffactor;
                   }
-                  if(calcMode == 1){
+                  if(mode == 1){
                     //realG frac2 = sigma*sigma / distSqr;
                     realG frac2 = 1.0 * 1.0 / distSqr;
                     realG frac6 = frac2 * frac2 * frac2;
                     //realG energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
                     realG energy = 4.0 * 1.0 * (frac6 * frac6 - frac6);
                     p_energy += energy;
-                    //p_energy += potential._computeEnergySqrRaw(distSqr);
                   }
                 }
               }
             }
           }
         }
-        if(calcMode == 0){
-          force[idx].x = p_real * p_force.x;
-          force[idx].y = p_real * p_force.y;
-          force[idx].z = p_real * p_force.z;
+        if(mode == 0){
+          force[idx].x = real[idx] * p_force.x;
+          force[idx].y = real[idx] * p_force.y;
+          force[idx].z = real[idx] * p_force.z;
         }
   
-        if(calcMode == 1){
+        if(mode == 1){
           energy[idx] = p_energy;
         }
       }
@@ -143,8 +159,10 @@ namespace espressopp {
 
     h_energy = new realG[gpuStorage->numberLocalParticles];
     cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles);
+    unsigned numPots = 1;
+    unsigned shared_mem_size = 10 * sizeof(realG) * 5;
     //printf("numLocalCells: %d, Particles: %d, numBlocks: %d, numThreads: %d\n", gpuStorage->numberLocalCells, gpuStorage->numberLocalParticles, numBlocks, numBlocks*numThreads);
-    testKernel<<<numBlocks, numThreads>>>(
+    testKernel<<<numBlocks, numThreads, shared_mem_size>>>(
                             gpuStorage->numberLocalParticles, 
                             gpuStorage->numberLocalCells, 
                             gpuStorage->d_id,
@@ -160,6 +178,7 @@ namespace espressopp {
                             gpuStorage->d_cellNeighbors,
                             d_energy,
                             gpuPots,
+                            numPots,
                             mode
                           );
       cudaDeviceSynchronize();  CUERR

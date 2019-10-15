@@ -93,7 +93,7 @@ namespace espressopp {
         p_pos.z = pos[idx].z;
         //realG p_mass = mass[idx];
         //realG p_drift = drift[idx];
-        //int p_type = type[idx];
+        int p_type = type[idx];
         //int p_real = real[idx] ? 1 : 0;
         int p_cellId = cellId[idx];
         realG3 p_force = make_realG3(0.0,0.0,0.0);
@@ -106,30 +106,26 @@ namespace espressopp {
             for(int j = 0; j < cellParticles[currentCellId]; ++j){
               int currentCellOffset = cellOffsets[currentCellId];
               if(currentCellOffset + j != idx){
+                int potI = p_type * numPots + type[currentCellOffset + j];
                 p_dist.x = p_pos.x - pos[currentCellOffset + j].x;
                 p_dist.y = p_pos.y - pos[currentCellOffset + j].y;
                 p_dist.z = p_pos.z - pos[currentCellOffset + j].z;
                 distSqr =  p_dist.x * p_dist.x;
                 distSqr += p_dist.y * p_dist.y;
                 distSqr += p_dist.z * p_dist.z;
-                // Type check here
-
-                if(distSqr <= (s_cutoff[0] * s_cutoff[0])){
+                if(distSqr <= (s_cutoff[potI] * s_cutoff[potI])){
                   if(mode == 0){
                     realG frac2 = 1.0 / distSqr;
                     realG frac6 = frac2 * frac2 * frac2;
-                    realG ffactor = frac6 * (s_ff1[0] * frac6 - s_ff2[0]) * frac2;
-                    //realG ffactor = frac6 * (48 * frac6 - 24) * frac2;
+                    realG ffactor = frac6 * (s_ff1[potI] * frac6 - s_ff2[potI]) * frac2;
                     p_force.x += p_dist.x * ffactor;
                     p_force.y += p_dist.y * ffactor;
                     p_force.z += p_dist.z * ffactor;
                   }
                   if(mode == 1){
-                    //realG frac2 = sigma*sigma / distSqr;
-                    realG frac2 = 1.0 * 1.0 / distSqr;
+                    realG frac2 = s_sigma[potI] * s_sigma[potI] / distSqr;
                     realG frac6 = frac2 * frac2 * frac2;
-                    //realG energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
-                    realG energy = 4.0 * 1.0 * (frac6 * frac6 - frac6);
+                    realG energy = 4.0 * s_epsilon[potI] * (frac6 * frac6 - frac6);
                     p_energy += energy;
                   }
                 }
@@ -149,6 +145,7 @@ namespace espressopp {
       }
     }
 
+    
 
   realG LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
     int numThreads = 128;

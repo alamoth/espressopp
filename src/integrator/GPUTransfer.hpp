@@ -60,7 +60,7 @@ namespace espressopp {
         static void registerPython();
 
       private:
-        boost::signals2::connection _aftCalcF, _aftInitF, _onParticlesChanged, _runInit;
+        boost::signals2::connection _aftCalcF, _aftInitF, _onParticlesChanged, _runInit, _aftCellAdjust;
         void connect();
         void disconnect();
 

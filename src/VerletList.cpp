@@ -83,7 +83,7 @@ namespace espressopp {
   
   void VerletList::rebuild()
   {
-    if(false){
+    if(true){
     //real cutVerlet = cut + getSystem() -> getSkin();
     cutVerlet = cut + getSystem() -> getSkin();
     cutsq = cutVerlet * cutVerlet;

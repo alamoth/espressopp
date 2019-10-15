@@ -288,7 +288,7 @@ start_time = time.clock()
 
 print "starting equilibration ..."
 # print inital status information
-espressopp.tools.analyse.info(system, integrator)
+# espressopp.tools.analyse.info(system, integrator)
 #sock = espressopp.tools.vmd.connect(system)
 for step in range(equil_nloops):
 

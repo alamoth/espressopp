@@ -110,7 +110,7 @@ void gpu_h2dParticleVars(   int N,
 
 }
 void gpu_d2hParticleForces( int N,
-    realG4 *h_force,
+                            realG4 *h_force,
                             realG4 **d_force
                         ){
     cudaMemcpy(h_force, *d_force, sizeof(realG4) * N, cudaMemcpyDeviceToHost);                         CUERR

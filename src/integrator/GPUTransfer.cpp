@@ -58,6 +58,7 @@ namespace espressopp {
       _aftInitF             =   integrator->gpuBefF.connect( boost::bind(&GPUTransfer::fillParticleVars, this));
   	  _aftCalcF             =   integrator->gpuAftF.connect( boost::bind(&GPUTransfer::getParticleForces, this));
       _runInit              =   integrator->runInit.connect ( boost::bind(&GPUTransfer::onRunInit, this));
+      _aftCellAdjust        =   system.storage->aftCellAdjust.connect ( boost::bind(&GPUTransfer::onRunInit, this));
     }
 
 

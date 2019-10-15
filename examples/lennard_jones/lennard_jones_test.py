@@ -64,13 +64,13 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 1024 #1024
+Npart              = 128 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
 L                  = pow(Npart/rho, 1.0/3.0)
 # cubic simulation box of size L
-box                = (L, L, L)
+box                = (10, 10, 10) #(L, L, L)
 # cutoff of the short range potential
 r_cutoff           = 2.5
 # VerletList skin size (also used for domain decomposition)

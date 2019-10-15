@@ -245,6 +245,7 @@ namespace espressopp {
         beforeSendParticles;
       boost::signals2::signal<void (ParticleList&, class InBuffer&)>
         afterRecvParticles;
+      boost::signals2::signal<void ()> aftCellAdjust;
 
 
       // for AdResS

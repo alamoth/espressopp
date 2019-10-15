@@ -297,6 +297,8 @@ namespace espressopp {
     
     exchangeGhosts();
     onParticlesChanged();
+    aftCellAdjust();
+
   }
 
   void DomainDecomposition::initCellInteractions() {
@@ -335,6 +337,7 @@ namespace espressopp {
     }
 
     LOG4ESPP_DEBUG(logger, "done");
+    aftCellAdjust();
   }
 
   Cell *DomainDecomposition::mapPositionToCell(const Real3D& pos) {
@@ -547,7 +550,8 @@ namespace espressopp {
                                  recvBufR.capacity()))));
 
     LOG4ESPP_DEBUG(logger, "finished exchanging particles, new send/recv buffer size " << exchangeBufferSize);
-
+    aftCellAdjust();
+    
     LOG4ESPP_DEBUG(logger, "done");
   }
 

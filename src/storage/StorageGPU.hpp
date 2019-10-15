@@ -13,13 +13,13 @@ class StorageGPU {
         int numberLocalParticles = 0;
         int numberLocalCells = 0;
 
-        realG3 *d_pos = 0;
-        realG3 *h_pos = 0;
-        realG3 *um_pos = 0;
+        realG4 *d_pos = 0;
+        realG4 *h_pos = 0;
+        realG4 *um_pos = 0;
 
-        realG3 *d_force = 0;
-        realG3 *h_force = 0;
-        realG3 *um_force = 0;
+        realG4 *d_force = 0;
+        realG4 *h_force = 0;
+        realG4 *um_force = 0;
 
         int *h_id = 0;
         int *d_id = 0;

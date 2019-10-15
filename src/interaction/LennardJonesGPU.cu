@@ -46,8 +46,8 @@ namespace espressopp {
                 int nCells,
                 int* id,
                 int* cellId,
-                realG3* pos,
-                realG3* force,
+                realG4* pos,
+                realG4* force,
                 realG* mass,
                 realG* drift,
                 int* type,
@@ -90,7 +90,7 @@ namespace espressopp {
         realG3 p_pos;
         p_pos.x = pos[idx].x;
         p_pos.y = pos[idx].y;
-        p_pos.z = pos[idx].z;        
+        p_pos.z = pos[idx].z;
         //realG p_mass = mass[idx];
         //realG p_drift = drift[idx];
         //int p_type = type[idx];

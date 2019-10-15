@@ -89,8 +89,11 @@ namespace espressopp {
         if(realCell){
           //printf("Real cell at i: %d, id: %d\n", i, localCells[i]->id);
           //printf("h_cellNeighbors[%d] = %d\n", i * 27, localCells[i]->id);
-          GPUStorage->h_cellNeighbors[i * 27] = localCells[i]->id;
-          for(unsigned int j = 0; j < 26; ++j){
+          for(unsigned int j = 0; j < 13; ++j){
+            GPUStorage->h_cellNeighbors[i * 27 + j] = localCells[i]->neighborCells[j].cell->id;
+          }
+          GPUStorage->h_cellNeighbors[i * 27 + 13] = localCells[i]->id;
+          for(unsigned int j = 13; j < 26; ++j){
             GPUStorage->h_cellNeighbors[i * 27 + j + 1] = localCells[i]->neighborCells[j].cell->id;
           }
         }

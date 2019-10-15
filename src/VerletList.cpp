@@ -83,10 +83,10 @@ namespace espressopp {
   
   void VerletList::rebuild()
   {
+    if(false){
     //real cutVerlet = cut + getSystem() -> getSkin();
     cutVerlet = cut + getSystem() -> getSkin();
     cutsq = cutVerlet * cutVerlet;
-    //printf("Cutoff: %f\n", cutVerlet);
     vlPairs.clear();
 
     // add particles to adress zone
@@ -100,6 +100,7 @@ namespace espressopp {
     builds++;
     LOG4ESPP_DEBUG(theLogger, "rebuilt VerletList (count=" << builds << "), cutsq = " << cutsq
                  << " local size = " << vlPairs.size());
+    }
   }
   
 

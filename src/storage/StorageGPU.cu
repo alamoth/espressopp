@@ -113,5 +113,7 @@ void gpu_d2hParticleForces( int N,
                             realG4 *h_force,
                             realG4 **d_force
                         ){
+    cudaDeviceSynchronize();  CUERR                        
     cudaMemcpy(h_force, *d_force, sizeof(realG4) * N, cudaMemcpyDeviceToHost);                         CUERR
+    cudaMemset(*d_force, 0, sizeof(realG4) * N);                        
 }

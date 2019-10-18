@@ -64,7 +64,7 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 128 #1024
+Npart              = 1024 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
@@ -101,9 +101,9 @@ epsilon_delta      = (epsilon_end - epsilon_start) / warmup_nloops
 # force capping radius
 capradius          = 0.6
 # number of equilibration loops
-equil_nloops       = 20 #20
+equil_nloops       = 3 #20
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 100
+equil_isteps       = 10 #100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -310,7 +310,7 @@ sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
 # all other lines : ParticleID  ParticleType  x_pos  y_pos  z_pos  x_vel  y_vel  z_vel 
 filename = "lennard_jones_fluid_G_%f.xyz" % time.clock()
 print "writing final configuration file ..." 
-#espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
+espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
 
 # also write a PDB file which can be used to visualize configuration with VMD
 #print "writing pdb file ..."

@@ -41,7 +41,7 @@ temperature = 1.0
 ######################################################################
 print espressopp.Version().info()
 print 'Setting up simulation ...'
-bonds, angles, x, y, z, Lx, Ly, Lz = espressopp.tools.lammps.read('polymer_melt.lammps')
+bonds, angles, x, y, z, Lx, Ly, Lz = espressopp.tools.lammps.read('examples/polymer_melt/polymer_melt.lammps')
 bonds, angles, x, y, z, Lx, Ly, Lz = espressopp.tools.replicate(bonds, angles, x, y, z, Lx, Ly, Lz, xdim=1, ydim=1, zdim=1)
 num_particles = len(x)
 density = num_particles / (Lx * Ly * Lz)
@@ -61,11 +61,16 @@ for i in range(num_particles):
     new_particles = []
 system.storage.addParticles(new_particles, *props)
 system.storage.decompose()
+# New
+GPUSupport = espressopp.integrator.GPUTransfer(system)
+integrator.addExtension(GPUSupport)
 
 # Lennard-Jones with Verlet list
 vl      = espressopp.VerletList(system, cutoff = rc)
-potLJ   = espressopp.interaction.LennardJones(epsilon=1.0, sigma=1.0, cutoff=rc, shift=0)
-interLJ = espressopp.interaction.VerletListLennardJones(vl)
+#potLJ   = espressopp.interaction.LennardJones(epsilon=1.0, sigma=1.0, cutoff=rc, shift=0)
+potLJ   = espressopp.interaction.LennardJonesGPU(epsilon=1.0, sigma=1.0, cutoff=rc, shift=0)
+interLJ = espressopp.interaction.CellListLennardJonesGPU(system.storage, vl)
+#interLJ = espressopp.interaction.VerletListLennardJones(vl)
 interLJ.setPotential(type1=0, type2=0, potential=potLJ)
 system.addInteraction(interLJ)
 

@@ -62,7 +62,7 @@ import espressopp
 ########################################################################
 
 # number of particles
-Npart              = 32768
+Npart              = 1048576
 # density of particles
 rho                = 0.8442
 # length of simulation box
@@ -161,8 +161,7 @@ integrator     = espressopp.integrator.VelocityVerlet(system)
 # set the integration step  
 integrator.dt  = dt
 
-GPUSupport = espressopp.integrator.GPUTransfer(system)
-integrator.addExtension(GPUSupport)
+
 
 # use a thermostat if the temperature is set
 if (temperature != None):
@@ -236,12 +235,15 @@ system.removeInteraction(0)
 # verlet list is not needed any more and would waste only CPU time
 verletlist.disconnect()
 
-#espressopp.tools.writexyz("32768Eq", system, velocities = False, unfolded = False)
+espressopp.tools.writexyz("1048576Eq", system, velocities = False, unfolded = False)
 
 
 ########################################################################
 # 7. setting up interaction potential for the equilibration            #
 ########################################################################
+
+#GPUSupport = espressopp.integrator.GPUTransfer(system)
+#integrator.addExtension(GPUSupport)
 
 # create a new verlet list that uses a cutoff radius = r_cutoff
 # the verlet radius is automatically increased by system.skin (see system setup)

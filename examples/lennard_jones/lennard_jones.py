@@ -62,7 +62,7 @@ import espressopp
 ########################################################################
 
 # number of particles
-Npart              = 1048576
+Npart              = 1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
@@ -235,7 +235,7 @@ system.removeInteraction(0)
 # verlet list is not needed any more and would waste only CPU time
 verletlist.disconnect()
 
-espressopp.tools.writexyz("1048576Eq", system, velocities = False, unfolded = False)
+espressopp.tools.writexyz("1024Eq", system, velocities = False, unfolded = False)
 
 
 ########################################################################

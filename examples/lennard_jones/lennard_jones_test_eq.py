@@ -64,7 +64,7 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 1024 #1024
+Npart              = 32768 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
@@ -101,9 +101,9 @@ epsilon_delta      = (epsilon_end - epsilon_start) / warmup_nloops
 # force capping radius
 capradius          = 0.6
 # number of equilibration loops
-equil_nloops       = 10 #1 #20 #10
+equil_nloops       = 10 #10 #1 #20 #10
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 100
+equil_isteps       = 100# 100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -186,8 +186,8 @@ if (temperature != None):
 ########################################################################
 # 4. adding the particles                                              #
 ########################################################################
-#f = open('32768Eq.xyz')
-f = open('1024Eq.xyz')
+f = open('32768Eq.xyz')
+# f = open('1024Eq.xyz')
 lines = f.readlines()
 print "adding ", Npart, " particles to the system ..." 
 for pid in range(Npart):

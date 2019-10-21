@@ -453,7 +453,6 @@ namespace espressopp {
       int potI;
       bool sameId;
       int calcCellOffset = cellOffsets[blockIdx.x];
-      
 
       if(cellParticles[blockIdx.x] == 0){
         return;
@@ -462,55 +461,69 @@ namespace espressopp {
         return;
       }
 
-      __syncthreads(); 
-
       realG3 p_dist;
       realG3 p_force;
       realG distSqr;
-      realG t_pos_x;
-      realG t_pos_y;
-      realG t_pos_z;      
-      realG t_type;
-      realG t_id;
+      // realG t_pos_x;
+      // realG t_pos_y;
+      // realG t_pos_z;      
+      int t_type;
+      int t_id;
       realG p_energy = 0;
 
       int warpId = threadIdx.x / warpSize;
       int laneId = threadIdx.x % warpSize;
-      if(warpId >= 9){
-        printf("error");
-      }
-      int dataOffset = cellNeighbors[blockIdx.x * 27 + 3 * warpId];
+
+      int dataOffset = cellOffsets[cellNeighbors[blockIdx.x * 27 + 3 * warpId]];
 
       if(threadIdx.x < 9){
-        numberLineParticles[threadIdx.x] = cellParticles[cellNeighbors[(blockIdx.x * 27) + (3 * threadIdx.x)] + 0] +
-                                            cellParticles[cellNeighbors[(blockIdx.x * 27) + (3 * threadIdx.x)] + 1] +
-                                            cellParticles[cellNeighbors[(blockIdx.x * 27) + (3 * threadIdx.x)] + 2];
+        numberLineParticles[threadIdx.x] = cellParticles[cellNeighbors[(blockIdx.x * 27) + (3 * threadIdx.x) + 0]] +
+                                            cellParticles[cellNeighbors[(blockIdx.x * 27) + (3 * threadIdx.x) + 1]] +
+                                            cellParticles[cellNeighbors[(blockIdx.x * 27) + (3 * threadIdx.x) + 2]];
         numberLineWarps[threadIdx.x] = (numberLineParticles[threadIdx.x ] - 1) / warpSize + 1;
       }
+      // __syncthreads();
+      // if(laneId == 0 && blockIdx.x == 61){
+      //   printf("Mode: %d, BlockIdx.x %d, warpId: %d, numLinePart: %d, numLineWarps: %d, block Ids: %d %d %d\n",
+      //       mode, blockIdx.x, warpId, numberLineParticles[warpId], numberLineWarps[warpId], cellNeighbors[(blockIdx.x * 27) + (3 * warpId)],
+      //       cellNeighbors[(blockIdx.x * 27) + (3 * warpId) + 1],
+      //       cellNeighbors[(blockIdx.x * 27) + (3 * warpId) + 2]);
+      // }
       __syncthreads();
 
       for(int i = 0; i < numberLineWarps[warpId]; ++i){
-        t_pos_x = 0.0f;
-        t_pos_y = 0.0f;
-        t_pos_z = 0.0f;
+        // t_pos_x = 0.0f;
+        // t_pos_y = 0.0f;
+        // t_pos_z = 0.0f;
+        p_energy = 0.0f;
+        p_force.x = 0.0f;
+        p_force.y = 0.0f;
+        p_force.z = 0.0f;
+        // if(threadIdx.x == 0){
+        //   printf("Mode: %d, This is blockIdx: %d\n", mode, blockIdx.x);
+        // }
+        
         if(i * warpSize + laneId < numberLineParticles[warpId]){
-          t_pos_x = pos[dataOffset + i * warpSize + laneId].x;
-          t_pos_y = pos[dataOffset + i * warpSize + laneId].y;
-          t_pos_z = pos[dataOffset + i * warpSize + laneId].z;
+          // t_pos_x = pos[dataOffset + i * warpSize + laneId].x;
+          // t_pos_y = pos[dataOffset + i * warpSize + laneId].y;
+          // t_pos_z = pos[dataOffset + i * warpSize + laneId].z;
           t_type = type[dataOffset + i * warpSize + laneId];
           t_id = id[dataOffset + i * warpSize + laneId];
-      
           for(int j = 0; j < cellParticles[blockIdx.x]; ++j){
             p_energy = 0.0f;
             p_force.x = 0.0f;
             p_force.y = 0.0f;
             p_force.z = 0.0f;
-            potI = t_id * numPots + type[calcCellOffset + j];
+            potI = t_type * numPots + type[calcCellOffset + j];
             sameId = t_id == id[calcCellOffset + j] ? true : false;
 
-            p_dist.x = pos[calcCellOffset + j].x - t_pos_x;
-            p_dist.y = pos[calcCellOffset + j].y - t_pos_y;
-            p_dist.z = pos[calcCellOffset + j].z - t_pos_z;
+            p_dist.x = pos[calcCellOffset + j].x - pos[dataOffset + i * warpSize + laneId].x;
+            p_dist.y = pos[calcCellOffset + j].y - pos[dataOffset + i * warpSize + laneId].y;
+            p_dist.z = pos[calcCellOffset + j].z - pos[dataOffset + i * warpSize + laneId].z;
+            // p_dist.x = pos[calcCellOffset + j].x - t_pos_x;
+            // p_dist.y = pos[calcCellOffset + j].y - t_pos_y;
+            // p_dist.z = pos[calcCellOffset + j].z - t_pos_z;
+
             distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
             if(distSqr <= (gpuPots[potI].cutoff * gpuPots[potI].cutoff)){
               if(!sameId){
@@ -530,28 +543,28 @@ namespace espressopp {
                 }
               }
             }
+          
             
             __syncwarp();
             if(mode == 0){
-              p_force = blockReduceSumTriple(p_force);
-              if(threadIdx.x == 0){
+              p_force = warpReduceSumTriple(p_force);
+              if(laneId == 0){
                 atomicAdd(&force[calcCellOffset + j].x, p_force.x);
                 atomicAdd(&force[calcCellOffset + j].y, p_force.y);
                 atomicAdd(&force[calcCellOffset + j].z, p_force.z);
-                // force[calcCellOffset + j].x += p_force.x;
-                // force[calcCellOffset + j].y += p_force.y;
-                // force[calcCellOffset + j].z += p_force.z;
               }
             }
             if(mode == 1){
-              p_energy = blockReduceSum(p_energy);
-              if(threadIdx.x == 0){
+              p_energy = warpReduceSum(p_energy);
+              if(laneId == 0){
                 atomicAdd(&energy[calcCellOffset + j], p_energy);
                 // energy[calcCellOffset + j] += p_energy;
               }
             }
+            __syncwarp();
           }
         }
+        __syncwarp();
       }
     }
     
@@ -601,7 +614,9 @@ namespace espressopp {
                               mode
                             );
     } else{
-      testKernel3<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
+      // printf("---------------------------\n");
+      // testKernel3<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
+        testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
         gpuStorage->numberLocalParticles, 
         gpuStorage->numberLocalCells, 
         gpuStorage->d_id,
@@ -621,7 +636,7 @@ namespace espressopp {
         mode
       ); CUERR
     }
-    //cudaDeviceSynchronize();
+    cudaDeviceSynchronize(); CUERR
 
       //printf("---\n");
       if(mode == 1) {

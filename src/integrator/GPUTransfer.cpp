@@ -29,6 +29,8 @@
 #include "iterator/CellListIterator.hpp"
 #include <iterator>
 #include <vector>
+#include "MortonHelper.h"
+
 
 namespace espressopp {
 
@@ -36,12 +38,13 @@ namespace espressopp {
 
   namespace integrator {
 
+
     LOG4ESPP_LOGGER(GPUTransfer::theLogger, "GPUTransfer");
 
     GPUTransfer::GPUTransfer(shared_ptr<System> system)
     : Extension(system)
     {
-
+      
     }
 
     void GPUTransfer::disconnect(){
@@ -79,13 +82,22 @@ namespace espressopp {
     }
 
     void GPUTransfer::fillCellData(){
-      mpi::communicator world;
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
       CellList localCells = system.storage->getLocalCells();
+      Int3D testSize = system.storage->getInt3DCellGrid();
+      
+      // std::cout << "CellGrid size: " << testSize << std::endl;
       int counterParticles = 0;
       bool realCell;
+      int3 mappedPos;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
+        // mappedPos = mapIndexToPosition(i, testSize[0]+2, testSize[1]+2, testSize[2]+2);
+        // unsigned int realIndex = EncodeMorton3(mappedPos.x, mappedPos.y, mappedPos.z);
+        // printf("Current i: %d, real Index: %d\n", i, realIndex);
+        // printf("Current i: %d, mapIndexToPosition: %d, %d, %d\n", i, mappedPos.x, mappedPos.y, mappedPos.z);
+        // printf("Current i: %d, mortonCode: %d %d %d\n", i, DecodeMorton3X(mappedPos.x), DecodeMorton3Y(mappedPos.y), DecodeMorton3Z(mappedPos.z));
+        // printf("Current i: %d, ");
         realCell = localCells[i]->neighborCells.size() == 0 ? false : true;
         if(realCell){
           //printf("Real cell at i: %d, id: %d\n", i, localCells[i]->id);

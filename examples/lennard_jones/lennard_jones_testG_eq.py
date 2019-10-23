@@ -186,8 +186,8 @@ integrator.addExtension(GPUSupport)
 ########################################################################
 # 4. adding the particles                                              #
 ########################################################################
-f = open('32768Eq.xyz')
-# f = open('1024Eq.xyz')
+f = open('32768Eq')
+# f = open('1024Eq')
 lines = f.readlines()
 print "adding ", Npart, " particles to the system ..." 
 for pid in range(Npart):

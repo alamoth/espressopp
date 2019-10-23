@@ -544,27 +544,33 @@ namespace espressopp {
               }
             }
           
-            
+            // __syncthreads();
             __syncwarp();
             if(mode == 0){
               p_force = warpReduceSumTriple(p_force);
+              // p_force = blockReduceSumTriple(p_force);
               if(laneId == 0){
+              // if(threadIdx.x == 0){
                 atomicAdd(&force[calcCellOffset + j].x, p_force.x);
                 atomicAdd(&force[calcCellOffset + j].y, p_force.y);
                 atomicAdd(&force[calcCellOffset + j].z, p_force.z);
               }
             }
             if(mode == 1){
+              // p_energy = blockReduceSum(p_energy);
               p_energy = warpReduceSum(p_energy);
               if(laneId == 0){
-                atomicAdd(&energy[calcCellOffset + j], p_energy);
+              // if(threadIdx.x == 0){
+                  atomicAdd(&energy[calcCellOffset + j], p_energy);
                 // energy[calcCellOffset + j] += p_energy;
               }
             }
             __syncwarp();
+            // __syncthreads();
           }
         }
         __syncwarp();
+        // __syncthreads();
       }
     }
     
@@ -593,7 +599,7 @@ namespace espressopp {
     unsigned numPots = 1;
     unsigned shared_mem_size = 10 * sizeof(realG) * 5;
     cudaMemset(gpuStorage->d_force, 0, sizeof(realG4) * gpuStorage->numberLocalParticles);
-    if(false){
+    if(true){
       testKernel<<<numBlocks, numThreads, shared_mem_size>>>(
                               gpuStorage->numberLocalParticles, 
                               gpuStorage->numberLocalCells, 
@@ -636,7 +642,7 @@ namespace espressopp {
         mode
       ); CUERR
     }
-    cudaDeviceSynchronize(); CUERR
+    //cudaDeviceSynchronize(); CUERR
 
       //printf("---\n");
       if(mode == 1) {

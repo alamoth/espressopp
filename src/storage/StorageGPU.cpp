@@ -22,8 +22,8 @@
         h_mass = new realG[numberLocalParticles];
         h_real = new bool[numberLocalParticles];
 
-        h_pos = new realG4[numberLocalParticles];
-        h_force = new realG4[numberLocalParticles];
+        h_pos = new realG3[numberLocalParticles];
+        h_force = new realG3[numberLocalParticles];
 
         gpu_resizeParticleData(numberLocalParticles, &d_cellId, &d_id, &d_type, &d_drift, &d_mass, &d_pos, &d_force, &d_real);
     }

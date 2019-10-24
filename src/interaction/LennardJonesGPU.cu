@@ -124,8 +124,8 @@ namespace espressopp {
                 const int nCells,
                 const int* __restrict__ id,
                 const int* __restrict__ cellId,
-                const realG4* __restrict__ pos,
-                realG4* force,
+                const realG3* __restrict__ pos,
+                realG3* force,
                 const realG* __restrict__ mass,
                 const realG* __restrict__ drift,
                 const int* __restrict__ type,
@@ -166,17 +166,14 @@ namespace espressopp {
       __syncthreads();
       */
       if(idx < nPart){
-        realG4 p_pos;
-        p_pos.x = pos[idx].x;
-        p_pos.y = pos[idx].y;
-        p_pos.z = pos[idx].z;
+        realG3 p_pos = pos[idx];
         //realG p_mass = mass[idx];
         //realG p_drift = drift[idx];
         int p_type = type[idx];
         //int p_real = real[idx] ? 1 : 0;
         int p_cellId = cellId[idx];
-        realG4 p_force = make_realG4(0.0,0.0,0.0,0.0);
-        realG4 p_dist;
+        realG3 p_force = make_realG3(0.0,0.0,0.0,0.0);
+        realG3 p_dist;
         realG distSqr = 0;
         realG p_energy = 0;
         if(real[idx]){
@@ -187,7 +184,7 @@ namespace espressopp {
               int currentCellOffset = cellOffsets[currentCellId];
               if(currentCellOffset + j != idx){
                 int potI = p_type * numPots + type[currentCellOffset + j];
-                realG4 secPart = pos[currentCellOffset + j];
+                realG3 secPart = pos[currentCellOffset + j];
                 // p_dist.x = __dsub_rn(p_pos.x, pos[currentCellOffset + j].x);
                 // p_dist.y = __dsub_rn(p_pos.y, pos[currentCellOffset + j].y);
                 // p_dist.z = __dsub_rn(p_pos.z, pos[currentCellOffset + j].z);
@@ -250,8 +247,8 @@ namespace espressopp {
                 const int nCells,
                 const int* id,
                 const int* cellId,
-                const realG4* pos,
-                realG4* force,
+                const realG3* pos,
+                realG3* force,
                 const realG* mass,
                 const realG* drift,
                 const int* type,
@@ -264,7 +261,7 @@ namespace espressopp {
                 const int numPots,
                 const int mode){
       int idx = blockIdx.x * blockDim.x + threadIdx.x;
-      // __shared__ realG4 s_pos[THREADSPERBLOCK];
+      // __shared__ realG3 s_pos[THREADSPERBLOCK];
       __shared__ realG s_pos_x[THREADSPERBLOCK];
       __shared__ realG s_pos_y[THREADSPERBLOCK];
       __shared__ realG s_pos_z[THREADSPERBLOCK];
@@ -436,8 +433,8 @@ namespace espressopp {
                 const int nCells,
                 const int* id,
                 const int* cellId,
-                const realG4* pos,
-                realG4* force,
+                const realG3* pos,
+                realG3* force,
                 const realG* mass,
                 const realG* drift,
                 const int* type,
@@ -578,7 +575,7 @@ namespace espressopp {
     }
     
   __global__ void
-  tKern(int N, realG4* force){
+  tKern(int N, realG3* force){
     float totalForce = 0;
     for(int i=0; i<N; ++i){
       totalForce += fabs(force[i].x) + fabs(force[i].y) + fabs(force[i].z); 
@@ -601,7 +598,7 @@ namespace espressopp {
     cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles);
     unsigned numPots = 1;
     unsigned shared_mem_size = 10 * sizeof(realG) * 5;
-    cudaMemset(gpuStorage->d_force, 0, sizeof(realG4) * gpuStorage->numberLocalParticles);
+    cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles);
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);

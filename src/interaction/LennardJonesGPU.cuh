@@ -27,6 +27,7 @@
 #include <cmath>
 #include <stdio.h>
 #include "stdio.h"
+// #include "esutil/CudaHelper.cuh"
 
 
 #include <cuda_runtime.h>
@@ -92,25 +93,6 @@ namespace espressopp {
 
       __device__ __host__
       realG getCutoff() const { return cutoff; }
-
-      __device__ __host__ 
-      void _computeForceRaw(realG3& force, const realG3& dist, realG distSqr){
-        realG frac2 = 1.0 / distSqr;
-        realG frac6 = frac2 * frac2 * frac2;
-        realG ffactor = frac6 * (ff1 * frac6 - ff2) * frac2;
-        force.x += dist.x * ffactor;
-        force.y += dist.y * ffactor;
-        force.z += dist.z * ffactor;
-      }
-
-      __device__ __host__ 
-      realG _computeEnergySqrRaw(realG distSqr){
-        realG frac2 = sigma*sigma / distSqr;
-        realG frac6 = frac2 * frac2 * frac2;
-        realG energy = 4.0 * epsilon * (frac6 * frac6 - frac6);
-        
-        return energy;
-      }
     };
   /*
     void LJGPUdriver( int nPart,

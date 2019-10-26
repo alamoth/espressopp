@@ -46,75 +46,6 @@ __device__ double atomicAdd(double* address, double val)
 }
 #endif
 
-__inline__ __device__
-realG3 warpReduceSumTriple(realG3 val) {
-  for (int offset = warpSize / 2; offset > 0; offset /= 2) {
-    val.x += __shfl_down_sync(0xFFFFFFFF, val.x, offset);
-    val.y += __shfl_down_sync(0xFFFFFFFF, val.y, offset);
-    val.z += __shfl_down_sync(0xFFFFFFFF, val.z, offset);
-  }
-  return val; 
-}__inline__ __device__
-realG warpReduceSum(realG val) {
-  for (int offset = warpSize/2; offset > 0; offset /= 2) 
-    val += __shfl_down_sync(0xFFFFFFFF, val, offset);
-  return val;
-}
-__inline__ __device__
-realG blockReduceSum(realG val) {
-
-  static __shared__ int shared[32]; // Shared mem for 32 partial sums
-  int lane = threadIdx.x % warpSize;
-  int wid = threadIdx.x / warpSize;
-
-  val = warpReduceSum(val);     // Each warp performs partial reduction
-
-  if (lane==0) shared[wid]=val; // Write reduced value to shared memory
-
-  __syncthreads();              // Wait for all partial reductions
-
-  //read from shared memory only if that warp existed
-  val = (threadIdx.x < blockDim.x / warpSize) ? shared[lane] : 0.0f;
-
-  if (wid==0) val = warpReduceSum(val); //Final reduce within first warp
-
-  return val;
-}
-__inline__ __device__
-realG3 blockReduceSumTriple(realG3 val) {
-
-  static __shared__ realG3 shared[32]; // Shared mem for 32 partial sums
-  int lane = threadIdx.x % warpSize;
-  int wid = threadIdx.x / warpSize;
-
-  val = warpReduceSumTriple(val);     // Each warp performs partial reduction
-
-  if (lane==0) shared[wid]=val; // Write reduced value to shared memory
-
-  __syncthreads();              // Wait for all partial reductions
-
-  //read from shared memory only if that warp existed
-  val = (threadIdx.x < blockDim.x / warpSize) ? shared[lane] : make_realG3(0.0,0.0,0.0,0.0);
-
-  if (wid==0) val = warpReduceSumTriple(val); //Final reduce within first warp
-
-  return val;
-}
-
-using namespace std;
-#define CUERR { \
-  cudaError_t cudaerr; \
-  if ((cudaerr = cudaGetLastError()) != cudaSuccess){ \
-      printf("CUDA ERROR: \"%s\" in File %s at LINE %d.\n", cudaGetErrorString(cudaerr), __FILE__, __LINE__); \
-  } \
-}
-
-#define PRINTL { \
-  if(threadIdx.x == 0){ \
-    printf("Line: %d\n", __LINE__); \
-  } \
-}
-
 
 namespace espressopp {
   namespace interaction {
@@ -216,7 +147,7 @@ namespace espressopp {
                 }
               }
             }
-            __syncwarp();
+            // __syncwarp();
           }
         }
       }
@@ -564,17 +495,6 @@ namespace espressopp {
       }
     }
     
-  __global__ void
-  tKern(int N, realG3* force){
-    float totalForce = 0;
-    for(int i=0; i<N; ++i){
-      totalForce += fabs(force[i].x) + fabs(force[i].y) + fabs(force[i].z); 
-      // if(force[i].x != 0.0f){
-      //   printf("Force[%4d] xyz: %.8f      %.8f      %.8f\n", i, force[i].x, force[i].y, force[i].z);
-      // }
-    }
-    printf("%f \t TotalForce\n", totalForce);
-  }
 
   realG LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
     int numThreads = 128;
@@ -589,12 +509,13 @@ namespace espressopp {
     unsigned numPots = 1;
     unsigned shared_mem_size = 10 * sizeof(realG) * 5;
     cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles);
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start);
 
-    if(false){
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start); CUERR
+    cudaEventCreate(&stop); CUERR
+    cudaEventRecord(start); CUERR
+
+    if(true){
       testKernel<<<numBlocks, numThreads, shared_mem_size>>>(
                               gpuStorage->numberLocalParticles, 
                               gpuStorage->numberLocalCells, 
@@ -616,7 +537,7 @@ namespace espressopp {
                             );
     } else{
       // printf("---------------------------\n");
-      // testKernel3<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
+      //  testKernel2<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
         testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
         gpuStorage->numberLocalParticles, 
         gpuStorage->numberLocalCells, 
@@ -637,13 +558,13 @@ namespace espressopp {
         mode
       ); CUERR
     }
-    cudaEventRecord(stop);
+    cudaEventRecord(stop); CUERR
 
     cudaDeviceSynchronize(); CUERR
-    cudaEventSynchronize(stop);
+    cudaEventSynchronize(stop); CUERR
     float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    // printf("kernel time: %f\n", milliseconds);
+    cudaEventElapsedTime(&milliseconds, start, stop); CUERR
+    printf("kernel time: %2.6f\n", milliseconds);
       //printf("---\n");
       if(mode == 1) {
         cudaMemcpy(h_energy, d_energy, sizeof(realG) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost); CUERR

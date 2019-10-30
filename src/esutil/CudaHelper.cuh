@@ -5,28 +5,31 @@
 #define make_realG4 make_double4
 #ifdef __NVCC__
 
-__inline__ __device__
-realG3 warpReduceSumTriple(realG3 val) {
+#define SDIV(x,y)(((x)+(y)-1)/(y))
+
+__forceinline__ __device__
+realG3 warpReduceSumTriple(realG3 val, unsigned mask) {
   for (int offset = warpSize / 2; offset > 0; offset /= 2) {
-    val.x += __shfl_down_sync(0xFFFFFFFF, val.x, offset);
-    val.y += __shfl_down_sync(0xFFFFFFFF, val.y, offset);
-    val.z += __shfl_down_sync(0xFFFFFFFF, val.z, offset);
+    val.x += __shfl_down_sync(mask, val.x, offset);
+    val.y += __shfl_down_sync(mask, val.y, offset);
+    val.z += __shfl_down_sync(mask, val.z, offset);
   }
   return val; 
-}__inline__ __device__
-realG warpReduceSum(realG val) {
+}
+__forceinline__ __device__
+realG warpReduceSum(realG val, unsigned mask) {
   for (int offset = warpSize/2; offset > 0; offset /= 2) 
-    val += __shfl_down_sync(0xFFFFFFFF, val, offset);
+    val += __shfl_down_sync(mask, val, offset);
   return val;
 }
-__inline__ __device__
-realG blockReduceSum(realG val) {
+__forceinline__ __device__
+realG blockReduceSum(realG val, unsigned mask) {
 
   static __shared__ int shared[32]; // Shared mem for 32 partial sums
   int lane = threadIdx.x % warpSize;
   int wid = threadIdx.x / warpSize;
 
-  val = warpReduceSum(val);     // Each warp performs partial reduction
+  val = warpReduceSum(val, mask);     // Each warp performs partial reduction
 
   if (lane==0) shared[wid]=val; // Write reduced value to shared memory
 
@@ -35,18 +38,18 @@ realG blockReduceSum(realG val) {
   //read from shared memory only if that warp existed
   val = (threadIdx.x < blockDim.x / warpSize) ? shared[lane] : 0.0f;
 
-  if (wid==0) val = warpReduceSum(val); //Final reduce within first warp
+  if (wid==0) val = warpReduceSum(val, mask); //Final reduce within first warp
 
   return val;
 }
-__inline__ __device__
-realG3 blockReduceSumTriple(realG3 val) {
+__forceinline__ __device__
+realG3 blockReduceSumTriple(realG3 val, unsigned mask) {
 
   static __shared__ realG3 shared[32]; // Shared mem for 32 partial sums
   int lane = threadIdx.x % warpSize;
   int wid = threadIdx.x / warpSize;
 
-  val = warpReduceSumTriple(val);     // Each warp performs partial reduction
+  val = warpReduceSumTriple(val, mask);     // Each warp performs partial reduction
 
   if (lane==0) shared[wid]=val; // Write reduced value to shared memory
 
@@ -55,7 +58,7 @@ realG3 blockReduceSumTriple(realG3 val) {
   //read from shared memory only if that warp existed
   val = (threadIdx.x < blockDim.x / warpSize) ? shared[lane] : make_realG3(0.0,0.0,0.0,0.0);
 
-  if (wid==0) val = warpReduceSumTriple(val); //Final reduce within first warp
+  if (wid==0) val = warpReduceSumTriple(val, mask); //Final reduce within first warp
 
   return val;
 }

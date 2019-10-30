@@ -57,6 +57,7 @@ target_compile_features(_espressopp PUBLIC cxx_std_11)
 target_compile_options(_espressopp PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
                            --generate-line-info
                            --relocatable-device-code=true
+                           --maxrregcount=32
                            >)                           
 set_target_properties(_espressopp PROPERTIES CUDA_SEPERABLE_COMPILATION ON)
 

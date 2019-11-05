@@ -75,17 +75,17 @@ namespace espressopp {
       }
       
       void
-      setPotential(int type1, int type2, Potential &potential) {
+      setPotential(int type1, int type2, Potential &_potential) {
         // typeX+1 because i<ntypes
         ntypes = std::max(ntypes, std::max(type1+1, type2+1));
-        potentialArray.at(type1, type2) = potential;
+        potentialArray.at(type1, type2) = _potential;
         LOG4ESPP_INFO(_Potential::theLogger, "added potential for type1=" << type1 << " type2=" << type2);
         if (type1 != type2) { // add potential in the other direction
-           potentialArray.at(type2, type1) = potential;
+           potentialArray.at(type2, type1) = _potential;
            LOG4ESPP_INFO(_Potential::theLogger, "automatically added the same potential for type1=" << type2 << " type2=" << type1);
         }
 
-        potential.copyToGPUImplt(&h_potential);
+        _potential.copyToGPUImplt(&h_potential);
         
         if(d_potentials != NULL){
            cudaFree(d_potentials); CUERR
@@ -105,7 +105,7 @@ namespace espressopp {
 
       // this is mainly used to access the potential from Python (e.g. to change parameters of the potential)
       shared_ptr<Potential> getPotentialPtr(int type1, int type2) {
-    	return  make_shared<Potential>(potentialArray.at(type1, type2));
+    	  return  make_shared<Potential>(potentialArray.at(type1, type2));
       }
 
       virtual void addForces();
@@ -141,7 +141,7 @@ namespace espressopp {
     CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
     addForces() {
       LOG4ESPP_INFO(theLogger, "add forces computed for all particles in the cell lists");
-      potential->_computeForceGPU(storage->getGPUstorage(), d_potentials);
+      getPotential(0,0)._computeForceGPU(storage->getGPUstorage(), d_potentials);
     }
 
     template < typename _Potential, typename _dPotential >
@@ -166,7 +166,7 @@ namespace espressopp {
       }
       */
       
-      es = potential->_computeEnergyGPU(storage->getGPUstorage(), d_potentials);
+      es = getPotential(0,0)._computeEnergyGPU(storage->getGPUstorage(), d_potentials);
       // reduce over all CPUs
       real esum;
       //boost::mpi::all_reduce(*getVerletList()->getSystem()->comm, es, esum, std::plus<real>());

@@ -10,6 +10,7 @@ typedef struct {
     realG *mass;
     realG *drift;
     bool *real;
+    realG4 *pos;
 } particleStatics;
 
 typedef struct {

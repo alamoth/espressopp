@@ -30,7 +30,7 @@
 #include <iterator>
 #include <vector>
 #include "MortonHelper.h"
-
+#include "GPUTransfer.cuh"
 
 namespace espressopp {
 
@@ -44,7 +44,29 @@ namespace espressopp {
     GPUTransfer::GPUTransfer(shared_ptr<System> system)
     : Extension(system)
     {
+      // int rank;
+      // int size;
+      // MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+      // MPI_Comm_rank( MPI_COMM_WORLD, &size );
+      // cudaError_t err;
+      // int dev_cnt = 0;
+      // err = cudaGetDeviceCount( &dev_cnt );
+      // assert( err == cudaSuccess || err == cudaErrorNoDevice );
+      // printf( "rank %d, mpi size: %d, cnt %d\n", rank, size, dev_cnt );
       
+      // cudaDeviceProp prop;
+      // for (int dev = 0; dev < dev_cnt; ++dev) {
+      //     err = cudaGetDeviceProperties( &prop, dev );
+      //     assert( err == cudaSuccess );
+      //     printf( "rank %d, dev %d, prop %s, pci %d, %d, %d\n",
+      //             rank, dev,
+      //             prop.name,
+      //             prop.pciBusID,
+      //             prop.pciDeviceID,
+      //             prop.pciDomainID );
+      //     // printf("unique id: %.*s\n", (int)sizeof(prop.uuid), prop.uuid);
+      // }
+
     }
 
     void GPUTransfer::disconnect(){
@@ -92,16 +114,8 @@ namespace espressopp {
       bool realCell;
       int3 mappedPos;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
-        // mappedPos = mapIndexToPosition(i, testSize[0]+2, testSize[1]+2, testSize[2]+2);
-        // unsigned int realIndex = EncodeMorton3(mappedPos.x, mappedPos.y, mappedPos.z);
-        // printf("Current i: %d, real Index: %d\n", i, realIndex);
-        // printf("Current i: %d, mapIndexToPosition: %d, %d, %d\n", i, mappedPos.x, mappedPos.y, mappedPos.z);
-        // printf("Current i: %d, mortonCode: %d %d %d\n", i, DecodeMorton3X(mappedPos.x), DecodeMorton3Y(mappedPos.y), DecodeMorton3Z(mappedPos.z));
-        // printf("Current i: %d, ");
         realCell = localCells[i]->neighborCells.size() == 0 ? false : true;
         if(realCell){
-          //printf("Real cell at i: %d, id: %d\n", i, localCells[i]->id);
-          //printf("h_cellNeighbors[%d] = %d\n", i * 27, localCells[i]->id);
           for(unsigned int j = 0; j < 13; ++j){
             GPUStorage->h_cellNeighbors[i * 27 + j] = localCells[i]->neighborCells[j].cell->id;
           }
@@ -135,13 +149,15 @@ namespace espressopp {
       System& system = getSystemRef();
       CellList localCells = system.storage->getLocalCells();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();   
-
+      printf("Sizeof(Particle) = %d\n", sizeof(Particle));
       unsigned int counterParticles = 0;
+      int max_n_part = 0;
       bool realParticle;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         realParticle = localCells[i]->neighborCells.size() == 0 ? false : true;
         GPUStorage->h_cellOffsets[i] = counterParticles;
         GPUStorage->h_particlesCell[i] = localCells[i]->particles.size();
+        max_n_part = Math.max(max_n_part, localCells[i]->particles.size());
         //printf("Offset[%d]: %d, cellParticles[%d]=%d\n",i,counterParticles,i, localCells[i]->particles.size());
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           Particle &p = localCells[i]->particles[j];

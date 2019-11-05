@@ -21,7 +21,7 @@
 */
 
 #include "python.hpp"
-#include "VerletList.hpp"
+#include "VerletListGPU.cuh"
 #include "Real3D.hpp"
 #include "Particle.hpp"
 #include "Cell.hpp"
@@ -34,14 +34,14 @@ namespace espressopp {
 
   using namespace espressopp::iterator;
 
-  LOG4ESPP_LOGGER(VerletList::theLogger, "VerletList");
+  LOG4ESPP_LOGGER(VerletListGPU::theLogger, "VerletListGPU");
 
 /*-------------------------------------------------------------*/
 
   // cut is a cutoff (without skin)
-  VerletList::VerletList(shared_ptr<System> system, real _cut, bool rebuildVL) : SystemAccess(system)
+  VerletListGPU::VerletListGPU(shared_ptr<System> system, real _cut, bool rebuildVL) : SystemAccess(system)
   {
-    LOG4ESPP_INFO(theLogger, "construct VerletList, cut = " << _cut);
+    LOG4ESPP_INFO(theLogger, "construct VerletListGPU, cut = " << _cut);
   
     if (!system->storage) {
        throw std::runtime_error("system has no storage");
@@ -57,22 +57,22 @@ namespace espressopp {
   
     // make a connection to System to invoke rebuild on resort
     connectionResort = system->storage->onParticlesChanged.connect(
-        boost::bind(&VerletList::rebuild, this));
+        boost::bind(&VerletListGPU::rebuild, this));
   }
   
-  real VerletList::getVerletCutoff(){
+  real VerletListGPU::getVerletCutoff(){
     return cutVerlet;
   }
   
-  void VerletList::connect()
+  void VerletListGPU::connect()
   {
 
   // make a connection to System to invoke rebuild on resort
   connectionResort = getSystem()->storage->onParticlesChanged.connect(
-      boost::bind(&VerletList::rebuild, this));
+      boost::bind(&VerletListGPU::rebuild, this));
   }
 
-  void VerletList::disconnect()
+  void VerletListGPU::disconnect()
   {
 
   // disconnect from System to avoid rebuild on resort
@@ -81,7 +81,7 @@ namespace espressopp {
 
   /*-------------------------------------------------------------*/
   
-  void VerletList::rebuild()
+  void VerletListGPU::rebuild()
   {
     if(true){
     //real cutVerlet = cut + getSystem() -> getSkin();
@@ -98,7 +98,7 @@ namespace espressopp {
     }
     
     builds++;
-    LOG4ESPP_DEBUG(theLogger, "rebuilt VerletList (count=" << builds << "), cutsq = " << cutsq
+    LOG4ESPP_DEBUG(theLogger, "rebuilt VerletListGPU (count=" << builds << "), cutsq = " << cutsq
                  << " local size = " << vlPairs.size());
     }
   }
@@ -106,7 +106,7 @@ namespace espressopp {
 
   /*-------------------------------------------------------------*/
   
-  void VerletList::checkPair(Particle& pt1, Particle& pt2)
+  void VerletListGPU::checkPair(Particle& pt1, Particle& pt2)
   {
 
     Real3D d = pt1.position() - pt2.position();
@@ -128,7 +128,7 @@ namespace espressopp {
   
   /*-------------------------------------------------------------*/
   
-  int VerletList::totalSize() const
+  int VerletListGPU::totalSize() const
   {
     System& system = getSystemRef();
     int size = localSize();
@@ -138,15 +138,15 @@ namespace espressopp {
     return allsize;
   }
 
-  int VerletList::localSize() const
+  int VerletListGPU::localSize() const
   {
     System& system = getSystemRef();
     return vlPairs.size();
   }
 
-  python::tuple VerletList::getPair(int i) {
+  python::tuple VerletListGPU::getPair(int i) {
 	  if (i <= 0 || i > vlPairs.size()) {
-	    std::cout << "ERROR VerletList pair " << i << " does not exists" << std::endl;
+	    std::cout << "ERROR VerletListGPU pair " << i << " does not exists" << std::endl;
 	    return python::make_tuple();
 	  } else {
 	    return python::make_tuple(vlPairs[i-1].first->id(), vlPairs[i-1].second->id());
@@ -154,7 +154,7 @@ namespace espressopp {
   }
 
 
-  bool VerletList::exclude(longint pid1, longint pid2) {
+  bool VerletListGPU::exclude(longint pid1, longint pid2) {
 
       exList.insert(std::make_pair(pid1, pid2));
 
@@ -164,9 +164,9 @@ namespace espressopp {
 
   /*-------------------------------------------------------------*/
   
-  VerletList::~VerletList()
+  VerletListGPU::~VerletListGPU()
   {
-    LOG4ESPP_INFO(theLogger, "~VerletList");
+    LOG4ESPP_INFO(theLogger, "~VerletListGPU");
   
     if (!connectionResort.connected()) {
       connectionResort.disconnect();
@@ -177,26 +177,26 @@ namespace espressopp {
   ** REGISTRATION WITH PYTHON
   ****************************************************/
   
-  void VerletList::registerPython() {
+  void VerletListGPU::registerPython() {
     using namespace espressopp::python;
 
-    bool (VerletList::*pyExclude)(longint pid1, longint pid2)
-          = &VerletList::exclude;
+    bool (VerletListGPU::*pyExclude)(longint pid1, longint pid2)
+          = &VerletListGPU::exclude;
 
 
-    class_<VerletList, shared_ptr<VerletList> >
-      ("VerletList", init< shared_ptr<System>, real, bool >())
+    class_<VerletListGPU, shared_ptr<VerletListGPU> >
+      ("VerletListGPU", init< shared_ptr<System>, real, bool >())
       .add_property("system", &SystemAccess::getSystem)
-      .add_property("builds", &VerletList::getBuilds, &VerletList::setBuilds)
-      .def("totalSize", &VerletList::totalSize)
-      .def("localSize", &VerletList::localSize)
-      .def("getPair", &VerletList::getPair)
+      .add_property("builds", &VerletListGPU::getBuilds, &VerletListGPU::setBuilds)
+      .def("totalSize", &VerletListGPU::totalSize)
+      .def("localSize", &VerletListGPU::localSize)
+      .def("getPair", &VerletListGPU::getPair)
       .def("exclude", pyExclude)
-      .def("rebuild", &VerletList::rebuild)
-      .def("connect", &VerletList::connect)
-      .def("disconnect", &VerletList::disconnect)
+      .def("rebuild", &VerletListGPU::rebuild)
+      .def("connect", &VerletListGPU::connect)
+      .def("disconnect", &VerletListGPU::disconnect)
     
-      .def("getVerletCutoff", &VerletList::getVerletCutoff)
+      .def("getVerletCutoff", &VerletListGPU::getVerletCutoff)
       ;
   }
 

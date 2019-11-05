@@ -64,7 +64,7 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 1000000 #1024
+Npart              = 100000 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
@@ -187,7 +187,7 @@ if (temperature != None):
 # 4. adding the particles                                              #
 ########################################################################
 # f = open('32768Eq')
-f = open('1000000Eq')
+f = open('100000Eq')
 # f = open('1024Eq')
 lines = f.readlines()
 print "adding ", Npart, " particles to the system ..." 

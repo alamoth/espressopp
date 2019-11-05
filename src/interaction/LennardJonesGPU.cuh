@@ -59,7 +59,6 @@ namespace espressopp {
       
       ~d_LennardJonesGPU(){};
 
-      __device__ __host__ 
       void preset() {
         realG sig2 = sigma * sigma;
         realG sig6 = sig2 * sig2 * sig2;
@@ -75,7 +74,6 @@ namespace espressopp {
         preset();
       }
 
-      __device__ __host__ 
       realG getEpsilon() const { return epsilon; }
 
       void setSigma(realG _sigma) { 
@@ -83,7 +81,6 @@ namespace espressopp {
         preset();
       }
 
-      __device__ __host__ 
       realG getSigma() const { return sigma; }
       
       void setCutoff(realG _cutoff) {
@@ -91,7 +88,6 @@ namespace espressopp {
         preset();
       }
 
-      __device__ __host__
       realG getCutoff() const { return cutoff; }
     };
   /*

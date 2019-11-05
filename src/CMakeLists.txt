@@ -1,6 +1,4 @@
 file(GLOB_RECURSE ESPRESSO_SOURCES *.cpp *.cu)
-#file(GLOB_RECURSE ESPRESSO_SOURCES *.cu)
-#file(GLOB_RECURSE ESPRESSO_SOURCES *.cuh)
 file(GLOB_RECURSE NOT_ESPRESSO_SOURCES
   esutil/GenLogger.cpp
   iterator/unittest/*.cpp
@@ -53,13 +51,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_library(_espressopp ${ESPRESSO_SOURCES})
 
 #cuda
-target_compile_features(_espressopp PUBLIC cxx_std_11)
-target_compile_options(_espressopp PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
-                           --generate-line-info
-                           --relocatable-device-code=true
-                           --maxrregcount=32
-                           >)                           
-set_target_properties(_espressopp PROPERTIES CUDA_SEPERABLE_COMPILATION ON)
+# target_compile_features(_espressopp PUBLIC cxx_std_11)
+# target_compile_options(_espressopp PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
+#                            --generate-line-info
+#                            >)                           
+# set_target_properties(_espressopp PROPERTIES CUDA_SEPERABLE_COMPILATION ON)
 
 
 target_link_libraries(_espressopp ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${MPI_LIBRARIES} ${FFTW3_LIBRARIES} ${VAMPIRTRACE_LIBRARIES})

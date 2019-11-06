@@ -31,6 +31,7 @@
 
 #include <cuda_runtime.h>
 #include "storage/StorageGPU.hpp"
+
 using namespace std;
 
 namespace espressopp {
@@ -89,20 +90,9 @@ namespace espressopp {
 
       realG getCutoff() const { return cutoff; }
     };
-  /*
-    void LJGPUdriver( int nPart,
-                      int nCells,
-                      realG3* pos, 
-                      realG3* force,
-                      realG* mass,
-                      realG* drift,
-                      int* type,
-                      int* cellOff,
-                      int* numCellN,
-                      d_LennardJonesGPU* gpuPots);
-                      */
-    realG LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode);
-    realG LJGPUdriverVl(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode, int* d_vl, int* d_n_nb);
+
+    realG LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int ptypes, int mode);
+    realG LJGPUdriverVl(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int ptypes, int* vl, int* n_nb, int mode);
   }
 }
 

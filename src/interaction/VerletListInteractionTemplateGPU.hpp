@@ -21,8 +21,8 @@
 */
 
 // ESPP_CLASS
-#ifndef _INTERACTION_CELLLISTALLPARTICLESINTERACTIONTEMPLATEGPU_HPP
-#define _INTERACTION_CELLLISTALLPARTICLESINTERACTIONTEMPLATEGPU_HPP
+#ifndef _INTERACTION_VERLETLISTINTERACTIONTEMPLATEGPU_HPP
+#define _INTERACTION_VERLETLISTINTERACTIONTEMPLATEGPU_HPP
 
 #include "types.hpp"
 #include "Tensor.hpp"
@@ -32,11 +32,12 @@
 #include "esutil/Array2D.hpp"
 #include "System.hpp"
 #include "mpi.hpp"
+#include "VerletList.hpp"
+#include "VerletListGPU.hpp"
 #include "bc/BC.hpp"
 #include "Real3D.hpp"
 #include "Particle.hpp"
 
-//#include "LennardJonesGPU.cuh"
 
 #define CUERR { \
     cudaError_t cudaerr; \
@@ -49,19 +50,29 @@ namespace espressopp {
   namespace interaction {
 
     template < typename _Potential, typename _dPotential >
-    class CellListAllParticlesInteractionTemplateGPU: public Interaction {
+    class VerletListInteractionTemplateGPU: public Interaction {
     protected:
       typedef _Potential Potential;
       typedef _dPotential dPotential;
     public:
-      CellListAllParticlesInteractionTemplateGPU
-      (shared_ptr < storage::Storage > _storage)
-        : storage(_storage)
+      VerletListInteractionTemplateGPU
+      (shared_ptr < storage::Storage > _storage,
+      shared_ptr< VerletListGPU > _verletList)
+        : storage(_storage),
+          verletList(_verletList)
           {
           potentialArray    = esutil::Array2D<Potential, esutil::enlarge>(0, 0, Potential());
           ntypes = 0;
         }
       
+      void
+      setVerletList(shared_ptr < VerletListGPU > _verletList) {
+        verletList = _verletList;
+      }
+
+      shared_ptr<VerletListGPU> getVerletList() {
+        return verletList;
+      }
       
       void
       setPotential(int type1, int type2, Potential &_potential) {
@@ -119,6 +130,7 @@ namespace espressopp {
       esutil::Array2D<Potential, esutil::enlarge> potentialArray;
       dPotential h_potential;
       dPotential* d_potentials = 0;
+      shared_ptr<VerletListGPU> verletList;
 
     };
 
@@ -126,19 +138,20 @@ namespace espressopp {
     // INLINE IMPLEMENTATION
     //////////////////////////////////////////////////
     template < typename _Potential, typename _dPotential > inline void
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     addForces() {
       LOG4ESPP_INFO(theLogger, "add forces computed for all particles in the cell lists");
-      getPotential(0,0)._computeForceGPU(storage->getGPUstorage(), d_potentials, ntypes);
-      // getPotential(0,0)._computeForceGPU(storage->getGPUstorage(), d_potentials, getVerletList()->getPairsGPU(), getVerletList()->getNumNbGPU());
+      getPotential(0,0)._computeForceGPU(storage->getGPUstorage(), 
+                                          d_potentials, ntypes, 
+                                          getVerletList()->getPairsGPU(), getVerletList()->getNumNbGPU());
 
     }
 
     template < typename _Potential, typename _dPotential >
     inline real
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeEnergy() {
-      LOG4ESPP_DEBUG(_Potential::theLogger, "loop over cell list pairs and sum up potential energies");
+      LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up potential energies");
       real e = 0.0;
       real es = 0.0;
       /*
@@ -156,8 +169,9 @@ namespace espressopp {
       }
       */
       
-      es = getPotential(0,0)._computeEnergyGPU(storage->getGPUstorage(), d_potentials, ntypes);
-      // es = getPotential(0,0)._computeEnergyGPU(storage->getGPUstorage(), d_potentials, getVerletList()->getPairsGPU(), getVerletList()->getNumNbGPU());
+      es = getPotential(0,0)._computeEnergyGPU(storage->getGPUstorage(), 
+                                          d_potentials, ntypes, 
+                                          getVerletList()->getPairsGPU(), getVerletList()->getNumNbGPU());
       // reduce over all CPUs
       real esum;
       //boost::mpi::all_reduce(*getVerletListGPU()->getSystem()->comm, es, esum, std::plus<real>());
@@ -166,49 +180,49 @@ namespace espressopp {
     }
 
     template < typename _Potential, typename _dPotential > inline real
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeEnergyDeriv() {
-      std::cout << "Warning! At the moment computeEnergyDeriv() in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl;
+      std::cout << "Warning! At the moment computeEnergyDeriv() in VerletListInteractionTemplateGPU does not work." << std::endl;
       return 0.0;
     }
 
     template < typename _Potential, typename _dPotential > inline real
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeEnergyAA() {
-      std::cout << "Warning! At the moment computeEnergyAA() in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl;
+      std::cout << "Warning! At the moment computeEnergyAA() in VerletListInteractionTemplateGPU does not work." << std::endl;
       return 0.0;
     }
 
     template < typename _Potential, typename _dPotential > inline real
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeEnergyAA(int atomtype) {
-      std::cout << "Warning! At the moment computeEnergyAA(int atomtype) in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl;
+      std::cout << "Warning! At the moment computeEnergyAA(int atomtype) in VerletListInteractionTemplateGPU does not work." << std::endl;
       return 0.0;
     }
 
     template < typename _Potential, typename _dPotential > inline real
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeEnergyCG() {
-      std::cout << "Warning! At the moment computeEnergyCG() in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl;
+      std::cout << "Warning! At the moment computeEnergyCG() in VerletListInteractionTemplateGPU does not work." << std::endl;
       return 0.0;
     }
 
     template < typename _Potential, typename _dPotential > inline real
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeEnergyCG(int atomtype) {
-      std::cout << "Warning! At the moment computeEnergyCG(int atomtype) in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl;
+      std::cout << "Warning! At the moment computeEnergyCG(int atomtype) in VerletListInteractionTemplateGPU does not work." << std::endl;
       return 0.0;
     }
 
     template < typename _Potential, typename _dPotential >
     inline void
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeVirialX(std::vector<real> &p_xx_total, int bins) {
-        std::cout << "Warning! At the moment computeVirialX in CellListAllParticlesInteractionTemplateGPU does not work." << std::endl << "Therefore, the corresponding interactions won't be included in calculation." << std::endl;
+        std::cout << "Warning! At the moment computeVirialX in VerletListInteractionTemplateGPU does not work." << std::endl << "Therefore, the corresponding interactions won't be included in calculation." << std::endl;
     }
 
     template < typename _Potential, typename _dPotential > inline real
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeVirial() {
       // LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up virial");
 
@@ -237,9 +251,9 @@ namespace espressopp {
     }
 
     template < typename _Potential, typename _dPotential > inline void
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeVirialTensor(Tensor& w) {
-       LOG4ESPP_DEBUG(_Potential::theLogger, "loop over cell list pairs and sum up virial tensor");
+       LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up virial tensor");
 
       // Tensor wlocal(0.0);
       // for (PairList::Iterator it(verletList->getPairs());
@@ -267,9 +281,9 @@ namespace espressopp {
 
 
     template < typename _Potential, typename _dPotential > inline void
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeVirialTensor(Tensor& w, real z) {
-      LOG4ESPP_DEBUG(_Potential::theLogger, "loop over cell list pairs and sum up virial tensor over one z-layer");
+      LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up virial tensor over one z-layer");
 
       // System& system = verletList->getSystemRef();
       // Real3D Li = system.bc->getBoxL();
@@ -322,7 +336,7 @@ namespace espressopp {
     }
 
     template < typename _Potential, typename _dPotential > inline void
-    CellListAllParticlesInteractionTemplateGPU <_Potential, _dPotential >::
+    VerletListInteractionTemplateGPU <_Potential, _dPotential >::
     computeVirialTensor(Tensor *w, int n) {
       // LOG4ESPP_DEBUG(_Potential::theLogger, "loop over verlet list pairs and sum up virial tensor in bins along z-direction");
 
@@ -396,7 +410,7 @@ namespace espressopp {
 
     template < typename _Potential, typename _dPotential >
     inline real
-    CellListAllParticlesInteractionTemplateGPU< _Potential, _dPotential >::
+    VerletListInteractionTemplateGPU< _Potential, _dPotential >::
     getMaxCutoff() {
       real cutoff = 0.0;
       for (int i = 0; i < ntypes; i++) {

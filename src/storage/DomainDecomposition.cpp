@@ -78,11 +78,6 @@ namespace espressopp {
           << " cell grid = "
           << _cellGrid[0] << "x" << _cellGrid[1] << "x" << _cellGrid[2]);
 
-    //StorageGPU* GPUStorage = getSystemRef().storage->getGPUstorage();
-    //GPUStorage->cellGridGPU.x = _cellGrid[0];
-    //GPUStorage->cellGridGPU.y = _cellGrid[1];
-    //GPUStorage->cellGridGPU.z = _cellGrid[2];
-
     createCellGrid(_nodeGrid, _cellGrid);
     initCellInteractions();
     prepareGhostCommunication();

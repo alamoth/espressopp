@@ -51,27 +51,10 @@ VerletListBuild(  const int nPart,
   num_nb[idx] = p_num_nb;
 }
 
-__global__ void 
-testK(int n_pt, int* vl, int* nb, int max_n_nb, bool* real){
-  for(int i = 0; i < n_pt * max_n_nb; ++i){
-    if(vl[i] != -1){
-      printf("vl[%4d] (Particle %4d) = %d, numN: %d (%s)(%s)\n", i, i % n_pt, vl[i], i / n_pt,  real[i%n_pt]? "real" : "ghost", real[vl[i]]? "real" : "ghost");
-    }
-  }
-  for(int i = 0; i < n_pt; ++i){
-    if(nb[i] != -1){
-      printf("Neighbors particle [%d] = %d\n", i, nb[i]);
-    }
-  }
-  for(int i = 0; i < 0; ++i){
-    printf("you should never see this");
-  }
-}
 
 void verletListBuildDriver(StorageGPU* GS, int n_pt, realG cutsq, int* d_vlPairs, int* d_n_nb, int max_n_nb){
 
     int threadsPerBlock = 256;
-    
     VerletListBuild<<<(n_pt + threadsPerBlock - 1) / threadsPerBlock, threadsPerBlock>>>(
         n_pt,
         GS->numberLocalCells,
@@ -87,8 +70,5 @@ void verletListBuildDriver(StorageGPU* GS, int n_pt, realG cutsq, int* d_vlPairs
         d_n_nb,
         max_n_nb);
     cudaDeviceSynchronize(); CUERR
-
-    // testK<<<1,1>>>(n_pt, d_vlPairs, d_n_nb, max_n_nb, GS->d_real); cudaDeviceSynchronize(); CUERR
   }
-
 }

@@ -602,7 +602,7 @@ __global__ void
       }
     }
     
-  realG LJGPUdriverVl(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode, int* d_vl, int* d_n_nb){
+  realG LJGPUdriverVl(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int ptypes, int* vl, int* n_nb, int mode){
     realG *h_energy; 
     realG *d_energy;
     realG totalEnergy = 0;
@@ -610,50 +610,50 @@ __global__ void
     h_energy = new realG[gpuStorage->numberLocalParticles];
     cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles);
     cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles);
-    unsigned numPots = 1;
-    unsigned shared_mem_size = 10 * sizeof(realG) * 5;
+    unsigned shared_mem_size = ptypes * ptypes * sizeof(realG) * 5;
     cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles);
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start); CUERR
     cudaEventCreate(&stop); CUERR
     cudaEventRecord(start); CUERR
-    testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
-      //  testKernel2<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
-      // testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
-                            gpuStorage->numberLocalParticles, 
-                            gpuStorage->numberLocalCells, 
-                            gpuStorage->d_id,
-                            gpuStorage->d_cellId,
-                            gpuStorage->d_pos,
-                            gpuStorage->d_force,
-                            gpuStorage->d_mass,
-                            gpuStorage->d_drift,
-                            gpuStorage->d_type,
-                            gpuStorage->d_real,
-                            gpuStorage->d_particlesCell,
-                            gpuStorage->d_cellOffsets,
-                            gpuStorage->d_cellNeighbors,
-                            d_energy,
-                            gpuPots,
-                            numPots,
-                            mode
-                          );
+    // testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
+    //   //  testKernel2<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
+    //   // testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
+    //                         gpuStorage->numberLocalParticles, 
+    //                         gpuStorage->numberLocalCells, 
+    //                         gpuStorage->d_id,
+    //                         gpuStorage->d_cellId,
+    //                         gpuStorage->d_pos,
+    //                         gpuStorage->d_force,
+    //                         gpuStorage->d_mass,
+    //                         gpuStorage->d_drift,
+    //                         gpuStorage->d_type,
+    //                         gpuStorage->d_real,
+    //                         gpuStorage->d_particlesCell,
+    //                         gpuStorage->d_cellOffsets,
+    //                         gpuStorage->d_cellNeighbors,
+    //                         d_energy,
+    //                         gpuPots,
+    //                         numPots,
+    //                         mode
+    //                       );
 
-    // verletListKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
-    //   gpuStorage->numberLocalParticles, 
-    //   gpuStorage->d_pos,
-    //   gpuStorage->d_force,
-    //   gpuStorage->d_mass,
-    //   gpuStorage->d_drift,
-    //   gpuStorage->d_type,
-    //   gpuStorage->d_real,
-    //   d_energy,
-    //   gpuPots,
-    //   numPots,
-    //   mode,
-    //   d_vl,
-    //   d_n_nb);
+    verletListKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
+      gpuStorage->numberLocalParticles, 
+      gpuStorage->d_pos,
+      gpuStorage->d_force,
+      gpuStorage->d_mass,
+      gpuStorage->d_drift,
+      gpuStorage->d_type,
+      gpuStorage->d_real,
+      d_energy,
+      gpuPots,
+      ptypes,
+      mode,
+      vl,
+      n_nb
+    );
     cudaEventRecord(stop); CUERR
 
     cudaDeviceSynchronize(); CUERR
@@ -672,7 +672,7 @@ __global__ void
 
   }
 
-  realG LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode){
+  realG LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int ptypes, int mode){
     realG *h_energy; 
     realG *d_energy;
     realG totalEnergy = 0;
@@ -680,8 +680,7 @@ __global__ void
     h_energy = new realG[gpuStorage->numberLocalParticles];
     cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles);
     cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles);
-    unsigned numPots = 1;
-    unsigned shared_mem_size = 10 * sizeof(realG) * 5;
+    unsigned shared_mem_size = ptypes * ptypes * sizeof(realG) * 5;
     cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles);
 
     cudaEvent_t start, stop;
@@ -706,7 +705,7 @@ __global__ void
                             gpuStorage->d_cellNeighbors,
                             d_energy,
                             gpuPots,
-                            numPots,
+                            ptypes,
                             mode
                           );
     

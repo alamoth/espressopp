@@ -101,9 +101,9 @@ epsilon_delta      = (epsilon_end - epsilon_start) / warmup_nloops
 # force capping radius
 capradius          = 0.6
 # number of equilibration loops
-equil_nloops       = 10 #10 #1 #20 #10
+equil_nloops       = 1 #10 #1 #20 #10
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 100 # 100
+equil_isteps       = 50 # 100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()

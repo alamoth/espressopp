@@ -32,7 +32,6 @@
 #include <cuda_runtime.h>
 #include "LennardJonesGPU.cuh"
 
-
 using namespace std;
 
 
@@ -110,13 +109,13 @@ namespace espressopp {
       }
       real getSigma() const { return sigma; }
       
-      bool _computeForceGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots){
-        LJGPUdriver(gpuStorage, gpuPots, 0);
+      bool _computeForceGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int ptypes){
+        LJGPUdriver(gpuStorage, gpuPots, ptypes, 0);
         return true;
       }
 
-      bool _computeForceGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int* vl, int* n_nb){
-        LJGPUdriverVl(gpuStorage, gpuPots, 0, vl, n_nb);
+      bool _computeForceGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int ptypes, int* vl, int* n_nb){
+        LJGPUdriverVl(gpuStorage, gpuPots, ptypes, vl, n_nb, 0);
         return true;
       }
 
@@ -130,12 +129,12 @@ namespace espressopp {
         return true;
                       }
 
-      real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots){
-        return LJGPUdriver(gpuStorage, gpuPots, 1);
+      real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int ptypes){
+        return LJGPUdriver(gpuStorage, gpuPots, ptypes, 1);
       }
 
-      real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int* vl, int* n_nb){
-        return LJGPUdriverVl(gpuStorage, gpuPots, 1, vl, n_nb);
+      real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int ptypes, int* vl, int* n_nb){
+        return LJGPUdriverVl(gpuStorage, gpuPots, ptypes, vl, n_nb, 1);
       }
       
       real _computeEnergySqrRaw(real distSqr) const {

@@ -31,6 +31,7 @@
 #include "VerletListGPU.cuh"
 #include <cuda_runtime.h>
 #include "esutil/CudaHelper.cuh"
+
 #define CUERR { \
   cudaError_t cudaerr; \
   if ((cudaerr = cudaGetLastError()) != cudaSuccess){ \
@@ -67,8 +68,8 @@ namespace espressopp {
 
   
     // make a connection to System to invoke rebuild on resort
-    connectionResort = system->storage->aftAftCellAdjust.connect(
-        boost::bind(&VerletListGPU::rebuild, this));    
+    // connectionResort = system->storage->aftAftCellAdjust.connect(
+    //     boost::bind(&VerletListGPU::rebuild, this));    
     connectionResort2 = system->storage->vlParticlesChanged.connect(
         boost::bind(&VerletListGPU::rebuild, this));
   }
@@ -81,9 +82,9 @@ namespace espressopp {
   {
 
   // make a connection to System to invoke rebuild on resort
-  connectionResort = getSystem()->storage->aftAftCellAdjust.connect(
-      boost::bind(&VerletListGPU::rebuild, this));
-  connectionResort = getSystem()->storage->vlParticlesChanged.connect(
+  // connectionResort = getSystem()->storage->aftAftCellAdjust.connect(
+  //     boost::bind(&VerletListGPU::rebuild, this));
+  connectionResort2 = getSystem()->storage->vlParticlesChanged.connect(
       boost::bind(&VerletListGPU::rebuild, this));
   }
 
@@ -98,7 +99,6 @@ namespace espressopp {
   
   void VerletListGPU::rebuild()
   {
-    if(false){
 
     int n_c_nb = 27; // no support for half cells
 
@@ -106,12 +106,8 @@ namespace espressopp {
     System& system = getSystemRef();
     StorageGPU* GS = system.storage->getGPUstorage();
     cutsq = cutVerlet * cutVerlet;
-    //vlPairs.clear();
-    // if(vlPairs != 0) 
-    // if(d_vlPairs != 0) 
-    // if(n_nb != 0) 
-    // if(d_n_nb != 0) 
     max_n_nb = GS->max_n_nb * n_c_nb;
+
     int oldSizeVl = sizeVl;
     int oldNpart = n_pt;
     n_pt = GS->numberLocalParticles;
@@ -144,49 +140,9 @@ namespace espressopp {
     cudaMemset(d_n_nb, -1, sizeof(int) * n_pt); CUERR 
 
     verletListBuildDriver(GS, n_pt, cutsq, d_vlPairs, d_n_nb, max_n_nb);
-    
+    builds++;
 
-    // cudaMemcpy(vlPairs, d_vlPairs, sizeof(int) * sizeVl, cudaMemcpyDeviceToHost);
-    // cudaMemcpy(n_nb, d_n_nb, sizeof(int) * n_pt, cudaMemcpyDeviceToHost);
-
-    // add particles to adress zone
-    // CellList cl = getSystem()->storage->getRealCells();
-    // LOG4ESPP_DEBUG(theLogger, "local cell list size = " << cl.size());
-    // for (CellListAllPairsIterator it(cl); it.isValid(); ++it) {
-    //   checkPair(*it->first, *it->second);
-    //   LOG4ESPP_DEBUG(theLogger, "checking particles " << it->first->id() << " and " << it->second->id());
-    // }
-    
-    // builds++;
-    // LOG4ESPP_DEBUG(theLogger, "rebuilt VerletListGPU (count=" << builds << "), cutsq = " << cutsq
-    //              << " local size = " << vlPairs.size());
-    }
   }
-  
-
-  /*-------------------------------------------------------------*/
-  
-  // void VerletListGPU::checkPair(Particle& pt1, Particle& pt2)
-  // {
-
-  //   Real3D d = pt1.position() - pt2.position();
-  //   real distsq = d.sqr();
-
-  //   LOG4ESPP_TRACE(theLogger, "p1: " << pt1.id()
-  //                  << " @ " << pt1.position() 
-	// 	   << " - p2: " << pt2.id() << " @ " << pt2.position()
-	// 	   << " -> distsq = " << distsq);
-
-  //   if (distsq > cutsq) return;
-
-  //   // see if it's in the exclusion list (both directions)
-  //   if (exList.count(std::make_pair(pt1.id(), pt2.id())) == 1) return;
-  //   if (exList.count(std::make_pair(pt2.id(), pt1.id())) == 1) return;
-
-  //   vlPairs.add(pt1, pt2); // add pair to Verlet List
-  // }
-  
-  /*-------------------------------------------------------------*/
   
   int VerletListGPU::totalSize() const
   {

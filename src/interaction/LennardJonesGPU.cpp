@@ -23,13 +23,14 @@
 #include "python.hpp"
 #include <boost/signals2.hpp>
 #include "CellListAllParticlesInteractionTemplateGPU.hpp"
+#include "VerletListInteractionTemplateGPU.hpp"
 #include "LennardJonesGPU.hpp"
-#include "LennardJonesGPU.cuh"
 
 namespace espressopp {
   namespace interaction {
 
     typedef class CellListAllParticlesInteractionTemplateGPU <LennardJonesGPU, d_LennardJonesGPU> CellListLennardJonesGPU;
+    typedef class VerletListInteractionTemplateGPU <LennardJonesGPU, d_LennardJonesGPU> VerletListLennadJonesGPU;
    
 
     //////////////////////////////////////////////////
@@ -45,12 +46,17 @@ namespace espressopp {
     	.add_property("epsilon", &LennardJonesGPU::getEpsilon, &LennardJonesGPU::setEpsilon);
       ;
 
+      class_< VerletListLennadJonesGPU, bases< Interaction > >
+        ("interaction_VerletListLennadJonesGPU",	init< shared_ptr< storage::Storage >, shared_ptr<VerletListGPU> >())
+        .def("getVerletList", &VerletListLennadJonesGPU::getVerletList)
+        .def("getPotential", &VerletListLennadJonesGPU::getPotentialPtr)
+        .def("setPotential", &VerletListLennadJonesGPU::setPotential);
+      ;
       class_< CellListLennardJonesGPU, bases< Interaction > >
-        ("interaction_CellListLennardJonesGPU",	init< shared_ptr< storage::Storage >, shared_ptr<VerletListGPU> >())
-        .def("getVerletList", &CellListLennardJonesGPU::getVerletList)
+        ("interaction_CellListLennardJonesGPU",	init< shared_ptr< storage::Storage >>())
         .def("getPotential", &CellListLennardJonesGPU::getPotentialPtr)
         .def("setPotential", &CellListLennardJonesGPU::setPotential);
-	  ;
+      ;
 
     }
     

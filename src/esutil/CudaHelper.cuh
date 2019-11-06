@@ -1,8 +1,8 @@
-#define realG float
-#define realG3 float4
-#define realG4 float4
-#define make_realG3 make_float4
-#define make_realG4 make_float4
+#define realG double
+#define realG3 double4
+#define realG4 double4
+#define make_realG3 make_double4
+#define make_realG4 make_double4
 #ifdef __NVCC__
 
 #define SDIV(x,y)(((x)+(y)-1)/(y))

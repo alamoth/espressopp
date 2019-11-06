@@ -83,7 +83,6 @@ namespace espressopp {
   
   void VerletList::rebuild()
   {
-    if(true){
     //real cutVerlet = cut + getSystem() -> getSkin();
     cutVerlet = cut + getSystem() -> getSkin();
     cutsq = cutVerlet * cutVerlet;
@@ -100,7 +99,6 @@ namespace espressopp {
     builds++;
     LOG4ESPP_DEBUG(theLogger, "rebuilt VerletList (count=" << builds << "), cutsq = " << cutsq
                  << " local size = " << vlPairs.size());
-    }
   }
   
 

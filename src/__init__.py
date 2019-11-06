@@ -37,6 +37,7 @@ from espressopp.Particle import *
 from espressopp.ParticleGroup import *
 from espressopp.System import *
 from espressopp.VerletList import *
+from espressopp.VerletListGPU import *
 from espressopp.VerletListTriple import *
 from espressopp.VerletListAdress import *
 from espressopp.FixedSingleList import *

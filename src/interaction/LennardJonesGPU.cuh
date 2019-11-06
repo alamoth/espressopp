@@ -25,7 +25,6 @@
 #ifndef LennardJonesGPU_CUH
 #define LennardJonesGPU_CUH
 #include <cmath>
-#include <stdio.h>
 #include "stdio.h"
 // #include "esutil/CudaHelper.cuh"
 
@@ -103,6 +102,7 @@ namespace espressopp {
                       d_LennardJonesGPU* gpuPots);
                       */
     realG LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode);
+    realG LJGPUdriverVl(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int mode, int* d_vl, int* d_n_nb);
   }
 }
 

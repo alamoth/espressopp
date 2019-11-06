@@ -99,15 +99,15 @@ class VerletListGPULocal(_espressopp.VerletListGPU):
             # rebuild list with exclusions
             self.cxxclass.rebuild(self)
             
-    def getAllPairs(self):
+    # def getAllPairs(self):
 
-        if pmi.workerIsActive():
-            pairs=[]
-            npairs=self.localSize()
-            for i in xrange(npairs):
-              pair=self.cxxclass.getPair(self, i+1)
-              pairs.append(pair)
-            return pairs 
+    #     if pmi.workerIsActive():
+    #         pairs=[]
+    #         npairs=self.localSize()
+    #         for i in xrange(npairs):
+    #           pair=self.cxxclass.getPair(self, i+1)
+    #           pairs.append(pair)
+    #         return pairs 
 
 
 if pmi.isController:
@@ -117,5 +117,5 @@ if pmi.isController:
       cls = 'espressopp.VerletListGPULocal',
       pmiproperty = [ 'builds' ],
       pmicall = [ 'totalSize', 'exclude', 'connect', 'disconnect', 'getVerletCutoff' ],
-      pmiinvoke = [ 'getAllPairs' ]
+    #   pmiinvoke = [ 'getAllPairs' ]
     )

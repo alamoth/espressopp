@@ -29,6 +29,7 @@
 #include <ParticleGroup.hpp>
 #include <System.hpp>
 #include <VerletList.hpp>
+#include <VerletListGPU.hpp>
 #include <VerletListAdress.hpp>
 #include <VerletListTriple.hpp>
 #include <FixedSingleList.hpp>
@@ -66,6 +67,7 @@ void espressopp::registerPython() {
   espressopp::ParticleGroup::registerPython();
   espressopp::System::registerPython();
   espressopp::VerletList::registerPython();
+  espressopp::VerletListGPU::registerPython();
   espressopp::VerletListAdress::registerPython();
   espressopp::VerletListTriple::registerPython();
   espressopp::FixedSingleList::registerPython();

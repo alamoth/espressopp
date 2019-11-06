@@ -64,13 +64,13 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 32768 #1024
+Npart              = 16 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
 L                  = pow(Npart/rho, 1.0/3.0)
 # cubic simulation box of size L
-box                = (L, L, L) #(10, 10, 10) #(L, L, L)
+box                = (10, 10, 10) #(L, L, L) # #(L, L, L)
 # cutoff of the short range potential
 r_cutoff           = 2.5
 # VerletList skin size (also used for domain decomposition)
@@ -87,9 +87,9 @@ sigma              = 1.0
 # interaction cut-off used during the warm-up phase
 warmup_cutoff      = pow(2.0, 1.0/6.0)
 # number of warm-up loops
-warmup_nloops      = 100 #100
+warmup_nloops      = 10 #100
 # number of integration steps performed in each warm-up loop
-warmup_isteps      = 20 #200 #10
+warmup_isteps      = 200 #200 #10
 # total number of integration steps of the warm-up phase
 total_warmup_steps = warmup_nloops * warmup_isteps
 # initial value for LJ epsilon at beginning of warmup
@@ -101,9 +101,9 @@ epsilon_delta      = (epsilon_end - epsilon_start) / warmup_nloops
 # force capping radius
 capradius          = 0.6
 # number of equilibration loops
-equil_nloops       = 20 #1 #20 #10
+equil_nloops       = 1 #1 #20 #10
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 100 #100
+equil_isteps       = 1 #100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -317,7 +317,7 @@ espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
 #also write a PDB file which can be used to visualize configuration with VMD
 print "writing pdb file ..."
 filename = "lennard_jones_fluid_%f.pdb" % time.clock()
-espressopp.tools.pdbwrite(filename, system, molsize=Npart)
+# espressopp.tools.pdbwrite(filename, system, molsize=Npart)
 
 
 

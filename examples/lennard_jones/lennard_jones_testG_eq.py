@@ -64,7 +64,7 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 100000 #1024
+Npart              = 100000 #100000 #1024 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
@@ -186,9 +186,9 @@ integrator.addExtension(GPUSupport)
 ########################################################################
 # 4. adding the particles                                              #
 ########################################################################
-f = open('100000Eq')
+# f = open('100000Eq')
 # f = open('32768Eq')
-# f = open('1024Eq')
+f = open(str(Npart)+'Eq')
 lines = f.readlines()
 print "adding ", Npart, " particles to the system ..." 
 for pid in range(Npart):
@@ -253,7 +253,8 @@ verletlist.disconnect()
 
 # create a new verlet list that uses a cutoff radius = r_cutoff
 # the verlet radius is automatically increased by system.skin (see system setup)
-verletlist  = espressopp.VerletList(system, r_cutoff)
+# verletlist  = espressopp.VerletList(system, r_cutoff)
+verletlist = espressopp.VerletListGPU(system, r_cutoff)
 # define a Lennard-Jones interaction that uses a verlet list 
 
 #interaction = espressopp.interaction.VerletListZero(verletlist)
@@ -314,9 +315,9 @@ sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
 # first line      : number of particles
 # second line     : box_Lx, box_Ly, box_Lz
 # all other lines : ParticleID  ParticleType  x_pos  y_pos  z_pos  x_vel  y_vel  z_vel 
-# filename = "lennard_jones_fluid_G_%f.xyz" % time.clock()
+filename = "lennard_jones_fluid_G_%f.xyz" % time.clock()
 # print "writing final configuration file ..." 
-# espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
+espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
 
 # also write a PDB file which can be used to visualize configuration with VMD
 # print "writing pdb file ..."

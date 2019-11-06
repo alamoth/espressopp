@@ -31,6 +31,7 @@
 #include <vector>
 #include "MortonHelper.h"
 #include "GPUTransfer.cuh"
+#include <math.h>
 
 namespace espressopp {
 
@@ -78,8 +79,8 @@ namespace espressopp {
 
     void GPUTransfer::connect(){
       System& system = getSystemRef();
-    //  _onParticlesChanged   =   system.storage->onParticlesChanged.connect( boost::bind(&GPUTransfer::onDecompose, this));
-      _onParticlesChanged   =   integrator->gpuAftDec.connect( boost::bind(&GPUTransfer::onDecompose, this));
+      _onParticlesChanged   =   system.storage->gpuParticlesChanged.connect( boost::bind(&GPUTransfer::onDecompose, this));
+      // _onParticlesChanged   =   integrator->gpuAftDec.connect( boost::bind(&GPUTransfer::onDecompose, this));
       _aftInitF             =   integrator->gpuBefF.connect( boost::bind(&GPUTransfer::fillParticleVars, this));
   	  _aftCalcF             =   integrator->gpuAftF.connect( boost::bind(&GPUTransfer::getParticleForces, this));
       _runInit              =   integrator->runInit.connect ( boost::bind(&GPUTransfer::onRunInit, this));
@@ -107,9 +108,7 @@ namespace espressopp {
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
       CellList localCells = system.storage->getLocalCells();
-      Int3D testSize = system.storage->getInt3DCellGrid();
       
-      // std::cout << "CellGrid size: " << testSize << std::endl;
       int counterParticles = 0;
       bool realCell;
       int3 mappedPos;
@@ -135,6 +134,7 @@ namespace espressopp {
     void GPUTransfer::onDecompose(){
       GPUTransfer::resizeParticleData();
       GPUTransfer::fillParticleStatics();
+      GPUTransfer::fillParticleVars();
     }
 
     void GPUTransfer::resizeParticleData(){
@@ -149,15 +149,16 @@ namespace espressopp {
       System& system = getSystemRef();
       CellList localCells = system.storage->getLocalCells();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();   
-      printf("Sizeof(Particle) = %d\n", sizeof(Particle));
       unsigned int counterParticles = 0;
-      int max_n_part = 0;
+      int max_n_nb = 0;
       bool realParticle;
+      int n_cell_pt;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
         realParticle = localCells[i]->neighborCells.size() == 0 ? false : true;
+        n_cell_pt = localCells[i]->particles.size();
         GPUStorage->h_cellOffsets[i] = counterParticles;
-        GPUStorage->h_particlesCell[i] = localCells[i]->particles.size();
-        max_n_part = Math.max(max_n_part, localCells[i]->particles.size());
+        GPUStorage->h_particlesCell[i] = n_cell_pt;
+        max_n_nb = n_cell_pt > max_n_nb ? n_cell_pt : max_n_nb;
         //printf("Offset[%d]: %d, cellParticles[%d]=%d\n",i,counterParticles,i, localCells[i]->particles.size());
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           Particle &p = localCells[i]->particles[j];
@@ -170,6 +171,7 @@ namespace espressopp {
           counterParticles++;
         }
       }
+      GPUStorage->max_n_nb = max_n_nb;
       GPUStorage->h2dParticleStatics();
     }
     // On decompose end

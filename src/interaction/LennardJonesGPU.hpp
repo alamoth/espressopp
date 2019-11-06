@@ -115,6 +115,11 @@ namespace espressopp {
         return true;
       }
 
+      bool _computeForceGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int* vl, int* n_nb){
+        LJGPUdriverVl(gpuStorage, gpuPots, 0, vl, n_nb);
+        return true;
+      }
+
       bool _computeForceRaw(Real3D& force,
                       const Real3D& dist,
                       real distSqr) const {
@@ -127,6 +132,10 @@ namespace espressopp {
 
       real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots){
         return LJGPUdriver(gpuStorage, gpuPots, 1);
+      }
+
+      real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int* vl, int* n_nb){
+        return LJGPUdriverVl(gpuStorage, gpuPots, 1, vl, n_nb);
       }
       
       real _computeEnergySqrRaw(real distSqr) const {

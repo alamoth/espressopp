@@ -557,6 +557,8 @@ namespace espressopp {
       decomposeRealParticles();
       exchangeGhosts();
       onParticlesChanged();
+      gpuParticlesChanged();
+      vlParticlesChanged();
     }
 
     void Storage::packPositionsEtc(OutBuffer &buf,

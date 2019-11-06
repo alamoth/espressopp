@@ -241,11 +241,16 @@ namespace espressopp {
 	  lookupLocalParticle() and lookupRealParticle().
        */
       boost::signals2::signal<void ()> onParticlesChanged;
+      boost::signals2::signal<void ()> gpuParticlesChanged;
+      boost::signals2::signal<void ()> vlParticlesChanged;
+      
       boost::signals2::signal<void (ParticleList&, class OutBuffer&)>
         beforeSendParticles;
       boost::signals2::signal<void (ParticleList&, class InBuffer&)>
         afterRecvParticles;
       boost::signals2::signal<void ()> aftCellAdjust;
+      boost::signals2::signal<void ()> aftAftCellAdjust;
+      
 
 
       // for AdResS

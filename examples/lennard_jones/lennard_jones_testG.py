@@ -64,13 +64,13 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 32768 #1024
+Npart              = 16 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box
 L                  = pow(Npart/rho, 1.0/3.0)
 # cubic simulation box of size L
-box                = (L, L, L) #(10, 10, 10) #
+box                = (10,10,10) #(L, L, L) #(10, 10, 10) #
 # cutoff of the short range potential
 r_cutoff           = 2.5
 # VerletList skin size (also used for domain decomposition)
@@ -101,7 +101,7 @@ epsilon_delta      = (epsilon_end - epsilon_start) / warmup_nloops
 # force capping radius
 capradius          = 0.6
 # number of equilibration loops
-equil_nloops       = 20 #20
+equil_nloops       = 10 #20
 # number of integration steps performed in each equilibration loop
 equil_isteps       = 100 #100
 
@@ -177,8 +177,7 @@ if (temperature != None):
   # tell the integrator to use this thermostat
   integrator.addExtension(thermostat)
 
-GPUSupport = espressopp.integrator.GPUTransfer(system)
-integrator.addExtension(GPUSupport)
+
 
 ## steps 2. and 3. could be short-cut by the following expression:
 ## system, integrator = espressopp.standard_system.Default(box, warmup_cutoff, skin, dt, temperature)
@@ -244,11 +243,13 @@ verletlist.disconnect()
 ########################################################################
 # 7. setting up interaction potential for the equilibration            #
 ########################################################################
-
+GPUSupport = espressopp.integrator.GPUTransfer(system)
+integrator.addExtension(GPUSupport)
 # create a new verlet list that uses a cutoff radius = r_cutoff
 # the verlet radius is automatically increased by system.skin (see system setup)
-verletlist  = espressopp.VerletList(system, r_cutoff)
+verletlist  = espressopp.VerletListGPU(system, r_cutoff)
 # define a Lennard-Jones interaction that uses a verlet list 
+
 
 #interaction = espressopp.interaction.VerletListZero(verletlist)
 interaction = espressopp.interaction.CellListLennardJonesGPU(system.storage, verletlist)

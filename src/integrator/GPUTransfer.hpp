@@ -64,6 +64,7 @@ namespace espressopp {
         void connect();
         void disconnect();
 
+        uint32_t* mortonMapping;
 
 
         /** Logger */

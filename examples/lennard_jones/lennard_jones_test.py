@@ -64,7 +64,7 @@ import sys
 ########################################################################
 
 # number of particles
-Npart              = 16 #1024
+Npart              = 1024 #1024
 # density of particles
 rho                = 0.8442
 # length of simulation box

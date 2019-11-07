@@ -30,7 +30,6 @@
 #include <iterator>
 #include <vector>
 #include "MortonHelper.h"
-#include "GPUTransfer.cuh"
 #include <math.h>
 
 namespace espressopp {
@@ -109,7 +108,6 @@ namespace espressopp {
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
       CellList localCells = system.storage->getLocalCells();
       
-      int counterParticles = 0;
       bool realCell;
       int3 mappedPos;
       for(unsigned int i = 0; i < localCells.size(); ++i) {
@@ -123,7 +121,6 @@ namespace espressopp {
             GPUStorage->h_cellNeighbors[i * 27 + j + 1] = localCells[i]->neighborCells[j].cell->id;
           }
         }
-        counterParticles += localCells[i]->particles.size(); // needed?
       }
       GPUStorage->h2dCellData();
     }

@@ -1,5 +1,7 @@
 #include "VerletListGPU.cuh"
 #include <assert.h>
+//#ifdef __NVCC__
+
 namespace espressopp {
 
 __global__ void 
@@ -72,3 +74,4 @@ void verletListBuildDriver(StorageGPU* GS, int n_pt, realG cutsq, int* d_vlPairs
     cudaDeviceSynchronize(); CUERR
   }
 }
+// #endif

@@ -1,6 +1,7 @@
 #include "StorageGPU.cuh"
 #include <stdio.h>
 #include <cuda.h>
+//#ifdef __NVCC__
 
 #define CUERR { \
     cudaError_t cudaerr; \
@@ -117,3 +118,4 @@ void gpu_d2hParticleForces( int N,
     cudaMemcpy(h_force, *d_force, sizeof(realG3) * N, cudaMemcpyDeviceToHost);                         CUERR
     cudaMemset(*d_force, 0, sizeof(realG3) * N);                        
 }
+// #endif

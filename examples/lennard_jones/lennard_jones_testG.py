@@ -247,13 +247,14 @@ GPUSupport = espressopp.integrator.GPUTransfer(system)
 integrator.addExtension(GPUSupport)
 # create a new verlet list that uses a cutoff radius = r_cutoff
 # the verlet radius is automatically increased by system.skin (see system setup)
-verletlist  = espressopp.VerletListGPU(system, r_cutoff)
+# verletlist  = espressopp.VerletList(system, r_cutoff)
+verletlist = espressopp.VerletListGPU(system, r_cutoff)
+
 # define a Lennard-Jones interaction that uses a verlet list 
 
+# interaction = espressopp.interaction.CellListLennardJonesGPU(system.storage)
+interaction = espressopp.interaction.VerletListLennadJonesGPU(system.storage, verletlist)
 
-#interaction = espressopp.interaction.VerletListZero(verletlist)
-interaction = espressopp.interaction.CellListLennardJonesGPU(system.storage, verletlist)
-#interaction = espressopp.interaction.VerletListLennardJones(verletlist)
 
 # use a Lennard-Jones potential between 2 particles of type 0 
 # the potential is automatically shifted so that U(r=cutoff) = 0.0

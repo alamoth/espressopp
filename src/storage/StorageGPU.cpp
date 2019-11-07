@@ -1,6 +1,6 @@
 #include "StorageGPU.hpp"
-//#include "StorageGPU.cuh"
-
+#include "StorageGPU.cuh"
+//#ifdef __NVCC__
     
 #define my_delete(x) {delete x; x = 0;}
 
@@ -73,3 +73,5 @@
     void StorageGPU::d2hParticleForces(){
         gpu_d2hParticleForces(numberLocalParticles, h_force, &d_force);
     }
+
+// #endif

@@ -29,6 +29,7 @@
 #include <math.h>
 #include <assert.h>
 #define THREADSPERBLOCK 128
+//#ifdef __NVCC__
 
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
 #else
@@ -728,3 +729,4 @@ __global__ void
   }
 }
 
+// #endif

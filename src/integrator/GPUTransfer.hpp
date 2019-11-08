@@ -54,6 +54,9 @@ namespace espressopp {
         void resizeParticleData();
         void resizeCellData();
 
+        uint_fast32_t* to3D(uint_fast64_t idx, int xMax, int yMax, int zMax);
+        uint_fast64_t  to1D( int x, int y, int z , int xMax, int yMax, int zMax );
+
         virtual ~GPUTransfer() {};
 
         /** Register this class so it can be used from Python. */
@@ -64,7 +67,8 @@ namespace espressopp {
         void connect();
         void disconnect();
 
-        uint32_t* mortonMapping;
+        std::vector<int> mortonMapping;
+        bool mortonSorting = true;
 
 
         /** Logger */

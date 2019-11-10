@@ -66,7 +66,8 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "xlocale": "cpp",
-        "*.cu": "cpp"
+        "*.cu": "cpp",
+        "xstring": "cpp"
     },
     "C_Cpp.dimInactiveRegions": false,
     "C_Cpp.errorSquiggles": "Disabled"

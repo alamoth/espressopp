@@ -115,16 +115,16 @@ namespace espressopp {
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
       CellList localCells = system.storage->getLocalCells();
       int nLocalCells = localCells.size();
-      
+      int dim;
       // Morton mapping
       if(mortonSorting){
-        int dim = ceil(cbrt(nLocalCells));
-        
+        dim = ceil(cbrt(nLocalCells));
+         
         float base2 = log2((float)dim);
         int nearest2Power = pow(2, ceil(base2));
-        int sizeMM = pow(nearests2Power, 3);
+        int sizeMM = pow(nearest2Power, 3);
 
-        int sizeMM = pow(pow(2,ceil(log2((float)dim))),3);
+        // int sizeMM = pow(pow(2,ceil(log2((float)dim))),3);
         mortonMapping.resize(sizeMM);
         std::fill (mortonMapping.begin(), mortonMapping.end(), -1);
       }

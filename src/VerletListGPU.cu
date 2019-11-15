@@ -29,7 +29,6 @@ VerletListBuild(  const int nPart,
   realG3 p_pos1 = pos[idx];
   int p_num_nb = 0;
   int p_cellId = cellId[idx];
-  int p_type = type[idx];
 
   for(int i = 0; i < 27; ++i){
     int currentCellId = cellNeighbors[p_cellId * 27 + i];

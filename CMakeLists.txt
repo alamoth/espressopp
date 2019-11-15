@@ -19,7 +19,7 @@ enable_testing()
   set(CMAKE_CUDA_STANDARD 11)
   set(CMAKE_CUDA_STANDARD_REQUIRED ON)
   set(CUDA_SEPARABLE_COMPILATION ON)
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --generate-line-info -w")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lineinfo")
   message("Building ESPResSo++ with CUDA-enabled support")
 # endif(CUDA)
 

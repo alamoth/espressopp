@@ -48,17 +48,20 @@ namespace espressopp {
 
       
     //public:
+      __host__ __device__ 
       d_LennardJonesGPU()
 	      : epsilon(0.0), sigma(0.0) {
           preset();
       }
 
+      __host__ __device__ 
       d_LennardJonesGPU(realG _epsilon, realG _sigma) {
           preset();
       }
       
       ~d_LennardJonesGPU(){};
-
+      
+      __host__ __device__ 
       void preset() {
         realG sig2 = sigma * sigma;
         realG sig6 = sig2 * sig2 * sig2;

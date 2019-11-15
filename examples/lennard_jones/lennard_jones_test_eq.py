@@ -19,7 +19,7 @@ r_cutoff           = 2.5
 # VerletList skin size (also used for domain decomposition)
 skin               = 0.4
 # the temperature of the system
-temperature        = None
+temperature        = 1.0
 # time step for the velocity verlet integrator
 dt                 = 0.005
 # Lennard Jones epsilon during equilibration phase
@@ -27,9 +27,9 @@ epsilon            = 1.0
 # Lennard Jones sigma during warmup and equilibration
 sigma              = 1.0
 # number of equilibration loops
-equil_nloops       = 1 #10 #1 #20 #10
+equil_nloops       = 10 #10 #1 #20 #10
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 50 # 100
+equil_isteps       = 100 # 100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()

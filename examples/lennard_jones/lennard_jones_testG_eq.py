@@ -19,7 +19,7 @@ r_cutoff           = 2.5
 # VerletList skin size (also used for domain decomposition)
 skin               = 0.4
 # the temperature of the system
-temperature        = None
+temperature        = 1.0
 # time step for the velocity verlet integrator
 dt                 = 0.005
 # Lennard Jones epsilon during equilibration phase
@@ -126,7 +126,8 @@ system.storage.decompose()
 ########################################################################
 
 # verletlist  = espressopp.VerletList(system, r_cutoff)
-verletlist = espressopp.VerletListGPU(system, r_cutoff)
+# verletlist = espressopp.VerletListGPU(system, r_cutoff)
+verletlist = None
 
 interaction = espressopp.interaction.CellListLennardJonesGPU(system.storage)
 # interaction = espressopp.interaction.VerletListLennadJonesGPU(system.storage, verletlist)
@@ -176,6 +177,6 @@ sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
 # all other lines : ParticleID  ParticleType  x_pos  y_pos  z_pos  x_vel  y_vel  z_vel 
 filename = "lennard_jones_fluid_G_%f.xyz" % time.clock()
 # print "writing final configuration file ..." 
-espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
+# espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
 
 print "finished."

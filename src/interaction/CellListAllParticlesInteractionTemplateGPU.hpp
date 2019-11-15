@@ -65,7 +65,9 @@ namespace espressopp {
       
       void
       setPotential(int type1, int type2, Potential &_potential) {
-        // typeX+1 because i<ntypes
+        // Todo: indexing and handling of multiple types
+
+        // typeX+1 because i<ntypes       
         ntypes = std::max(ntypes, std::max(type1+1, type2+1));
         potentialArray.at(type1, type2) = _potential;
         LOG4ESPP_INFO(_Potential::theLogger, "added potential for type1=" << type1 << " type2=" << type2);

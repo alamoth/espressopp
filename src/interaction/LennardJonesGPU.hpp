@@ -80,6 +80,7 @@ namespace espressopp {
         h_potential->setEpsilon(epsilon);
         h_potential->setSigma(sigma);
         h_potential->setCutoff(cutoff);
+        h_potential->preset();
       }
 
       void preset() {

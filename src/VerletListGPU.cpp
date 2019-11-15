@@ -134,7 +134,6 @@ namespace espressopp {
     // } else{
 
     // }
-    // printf("max neighbors: %d, n_pt: %d, size VL: %d\n",max_n_nb, n_pt, sizeVl);
     
     cudaMemset(d_vlPairs, -1, sizeof(int) * sizeVl); CUERR
     cudaMemset(d_n_nb, -1, sizeof(int) * n_pt); CUERR 

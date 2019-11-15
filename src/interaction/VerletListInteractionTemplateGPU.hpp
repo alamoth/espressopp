@@ -76,6 +76,8 @@ namespace espressopp {
       
       void
       setPotential(int type1, int type2, Potential &_potential) {
+        // Todo: indexing and handling of multiple types
+        
         // typeX+1 because i<ntypes
         ntypes = std::max(ntypes, std::max(type1+1, type2+1));
         potentialArray.at(type1, type2) = _potential;
@@ -87,15 +89,15 @@ namespace espressopp {
 
         _potential.copyToGPUImplt(&h_potential);
         
-        if(d_potentials != NULL){
-           cudaFree(d_potentials); CUERR
-        }
+        // if(d_potentials != NULL){
+        //    cudaFree(d_potentials); CUERR
+        // }
         
         int offset = potentialArray.size_x() * type2 + type1;
         printf("Offset: %d, size array: %d x %d, size Allocated space: %d\n", offset, potentialArray.size_x(), potentialArray.size_y()
          ,sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y());
-        cudaMalloc(&d_potentials, sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y()); CUERR
-        cudaMemcpy(&d_potentials[offset], &h_potential, sizeof(dPotential), cudaMemcpyHostToDevice); CUERR
+         cudaMalloc(&d_potentials, sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y()); CUERR
+         cudaMemcpy(&d_potentials[offset], &h_potential, sizeof(dPotential), cudaMemcpyHostToDevice); CUERR
 
       }
       // this is used in the innermost force-loop
@@ -105,7 +107,7 @@ namespace espressopp {
 
       // this is mainly used to access the potential from Python (e.g. to change parameters of the potential)
       shared_ptr<Potential> getPotentialPtr(int type1, int type2) {
-    	  return  make_shared<Potential>(potentialArray.at(type1, type2));
+    	  return make_shared<Potential>(potentialArray.at(type1, type2));
       }
 
       virtual void addForces();

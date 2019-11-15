@@ -101,7 +101,6 @@ __global__ void
       realG frac2;
       realG frac6;
       realG calcResult;
-      int currentCellId;
       int n_nb = num_nb[idx];
       int potIdx;
       //#pragma unroll
@@ -117,6 +116,7 @@ __global__ void
         assert(p2_idx != -1);
 
         potIdx = p_type * numPots + type[p2_idx];
+        assert(potIdx != 0);
         p2_pos = pos[p2_idx];
 
         p_dist.x = p_pos.x - p2_pos.x;
@@ -166,7 +166,7 @@ __global__ void
                 const realG* __restrict__ drift,
                 const int* __restrict__ type,
                 const bool* __restrict__ real,
-                const int* __restrict__ cellParticles, 
+                const int* __restrict__ cellParticlesN, 
                 const int* __restrict__ cellOffsets,
                 const int* __restrict__ cellNeighbors,
                 realG* energy,
@@ -213,22 +213,25 @@ __global__ void
       //#pragma unroll
       for(int i = 0; i < 27; ++i){
         currentCellId = cellNeighbors[p_cellId * 27 + i];
-        for(int j = 0; j < cellParticles[currentCellId]; ++j){
-          if(cellOffsets[currentCellId] + j != idx){
-            int potI = p_type * numPots + type[cellOffsets[currentCellId] + j];
-            realG3 secPart = pos[cellOffsets[currentCellId] + j];
+        for(int j = 0; j < cellParticlesN[currentCellId]; ++j){
+          int pOffset = cellOffsets[currentCellId] + j;
+          if(pOffset != idx){
+            int potIdx = p_type * numPots + type[];
+            assert(potIdx != 0);
+
+            realG3 p2_pos = pos[pOffset];
             // p_dist.x = __dsub_rn(p_pos.x, pos[cellOffsets[currentCellId] + j].x);
             // p_dist.y = __dsub_rn(p_pos.y, pos[cellOffsets[currentCellId] + j].y);
             // p_dist.z = __dsub_rn(p_pos.z, pos[cellOffsets[currentCellId] + j].z);
-            p_dist.x = p_pos.x - secPart.x;
-            p_dist.y = p_pos.y - secPart.y;
-            p_dist.z = p_pos.z - secPart.z;
+            p_dist.x = p_pos.x - p2_pos.x;
+            p_dist.y = p_pos.y - p2_pos.y;
+            p_dist.z = p_pos.z - p2_pos.z;
             distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
             // distSqr = 0;
             // distSqr = __fma_rn(p_dist.x, p_dist.x, distSqr);
             // distSqr = __fma_rn(p_dist.y, p_dist.y, distSqr);
             // distSqr = __fma_rn(p_dist.z, p_dist.z, distSqr);
-            if(distSqr <= (s_cutoff[potI] * s_cutoff[potI])){
+            if(distSqr <= (s_cutoff[potIdx] * s_cutoff[potIdx])){
             // if(distSqr <= (gpuPots[potI].cutoff * gpuPots[potI].cutoff)){
               // if(distSqr <= __dmul_rn(gpuPots[potI].cutoff, gpuPots[potI].cutoff)){
               if(mode == 0){
@@ -236,7 +239,7 @@ __global__ void
                 // frac2 = __drcp_rn(distSqr);
                 frac6 = frac2 * frac2 * frac2;
                 // realG frac6 = __dmul_rn(frac2, __dmul_rn(frac2, frac2));
-                calcResult = frac6 * (s_ff1[potI] * frac6 - s_ff2[potI]) * frac2;
+                calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
                 // calcResult = frac6 * (gpuPots[potI].ff1 * frac6 - gpuPots[potI].ff2) * frac2;
                 // calcResult = __dmul_rn(frac6, __dmul_rn((__dsub_rn(__dmul_rn(gpuPots[potI].ff1, frac6), gpuPots[potI].ff2)), frac2));
                 // calcResult = __dmul_rn(frac6, __dmul_rn((__dsub_rn(__dmul_rn(s_ff1[potI], frac6), s_ff2[potI])), frac2));
@@ -248,10 +251,10 @@ __global__ void
                 p_force.z += p_dist.z * calcResult;
               }
               if(mode == 1){
-                frac2 = s_sigma[potI] * s_sigma[potI] / distSqr;
+                frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;
                 // frac2 = gpuPots[potI].sigma * gpuPots[potI].sigma / distSqr;
                 frac6 = frac2 * frac2 * frac2;
-                calcResult = 4.0 * s_epsilon[potI] * (frac6 * frac6 - frac6);
+                calcResult = 4.0 * s_epsilon[potIdx] * (frac6 * frac6 - frac6);
                 // calcResult = 4.0 * gpuPots[potI].epsilon * (frac6 * frac6 - frac6);
                 p_energy += calcResult;
               }
@@ -260,10 +263,6 @@ __global__ void
         }
       }
       if(mode == 0){
-        // p_force.x *= real[idx];
-        // p_force.y *= real[idx];
-        // p_force.z *= real[idx];
-
         force[idx] = p_force;
       }
 
@@ -289,7 +288,7 @@ __global__ void
                 const d_LennardJonesGPU* gpuPots,
                 const int numPots,
                 const int mode){
-      int idx = blockIdx.x * blockDim.x + threadIdx.x;
+      // int idx = blockIdx.x * blockDim.x + threadIdx.x;
       // __shared__ realG3 s_pos[THREADSPERBLOCK];
       __shared__ realG s_pos_x[THREADSPERBLOCK];
       __shared__ realG s_pos_y[THREADSPERBLOCK];
@@ -493,9 +492,9 @@ __global__ void
       realG3 p_dist;
       realG3 p_force;
       realG distSqr;
-      // realG t_pos_x;
-      // realG t_pos_y;
-      // realG t_pos_z;      
+      realG t_pos_x;
+      realG t_pos_y;
+      realG t_pos_z;      
       int t_type;
       int t_id;
       realG p_energy = 0;
@@ -521,9 +520,9 @@ __global__ void
       __syncthreads();
 
       for(int i = 0; i < numberLineWarps[warpId]; ++i){
-        // t_pos_x = 0.0f;
-        // t_pos_y = 0.0f;
-        // t_pos_z = 0.0f;
+        t_pos_x = 0.0f;
+        t_pos_y = 0.0f;
+        t_pos_z = 0.0f;
         p_energy = 0.0f;
         p_force.x = 0.0f;
         p_force.y = 0.0f;
@@ -533,9 +532,9 @@ __global__ void
         // }
         unsigned mask = __ballot_sync(0xffffffff, i * warpSize + laneId < numberLineParticles[warpId]);
         if(i * warpSize + laneId < numberLineParticles[warpId]){
-          // t_pos_x = pos[dataOffset + i * warpSize + laneId].x;
-          // t_pos_y = pos[dataOffset + i * warpSize + laneId].y;
-          // t_pos_z = pos[dataOffset + i * warpSize + laneId].z;
+          t_pos_x = pos[dataOffset + i * warpSize + laneId].x;
+          t_pos_y = pos[dataOffset + i * warpSize + laneId].y;
+          t_pos_z = pos[dataOffset + i * warpSize + laneId].z;
           t_type = type[dataOffset + i * warpSize + laneId];
           t_id = id[dataOffset + i * warpSize + laneId];
           for(int j = 0; j < cellParticles[blockIdx.x]; ++j){
@@ -546,12 +545,12 @@ __global__ void
             potI = t_type * numPots + type[calcCellOffset + j];
             sameId = t_id == id[calcCellOffset + j] ? true : false;
 
-            p_dist.x = pos[calcCellOffset + j].x - pos[dataOffset + i * warpSize + laneId].x;
-            p_dist.y = pos[calcCellOffset + j].y - pos[dataOffset + i * warpSize + laneId].y;
-            p_dist.z = pos[calcCellOffset + j].z - pos[dataOffset + i * warpSize + laneId].z;
-            // p_dist.x = pos[calcCellOffset + j].x - t_pos_x;
-            // p_dist.y = pos[calcCellOffset + j].y - t_pos_y;
-            // p_dist.z = pos[calcCellOffset + j].z - t_pos_z;
+            // p_dist.x = pos[calcCellOffset + j].x - pos[dataOffset + i * warpSize + laneId].x;
+            // p_dist.y = pos[calcCellOffset + j].y - pos[dataOffset + i * warpSize + laneId].y;
+            // p_dist.z = pos[calcCellOffset + j].z - pos[dataOffset + i * warpSize + laneId].z;
+            p_dist.x = pos[calcCellOffset + j].x - t_pos_x;
+            p_dist.y = pos[calcCellOffset + j].y - t_pos_y;
+            p_dist.z = pos[calcCellOffset + j].z - t_pos_z;
 
             distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
             if(distSqr <= (gpuPots[potI].cutoff * gpuPots[potI].cutoff)){
@@ -609,36 +608,15 @@ __global__ void
     realG totalEnergy = 0;
 
     h_energy = new realG[gpuStorage->numberLocalParticles];
-    cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles);
-    cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles);
+    cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
+    cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
     unsigned shared_mem_size = ptypes * ptypes * sizeof(realG) * 5;
-    cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles);
+    cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles); CUERR
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start); CUERR
     cudaEventCreate(&stop); CUERR
     cudaEventRecord(start); CUERR
-    // testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
-    //   //  testKernel2<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
-    //   // testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
-    //                         gpuStorage->numberLocalParticles, 
-    //                         gpuStorage->numberLocalCells, 
-    //                         gpuStorage->d_id,
-    //                         gpuStorage->d_cellId,
-    //                         gpuStorage->d_pos,
-    //                         gpuStorage->d_force,
-    //                         gpuStorage->d_mass,
-    //                         gpuStorage->d_drift,
-    //                         gpuStorage->d_type,
-    //                         gpuStorage->d_real,
-    //                         gpuStorage->d_particlesCell,
-    //                         gpuStorage->d_cellOffsets,
-    //                         gpuStorage->d_cellNeighbors,
-    //                         d_energy,
-    //                         gpuPots,
-    //                         numPots,
-    //                         mode
-    //                       );
 
     verletListKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
       gpuStorage->numberLocalParticles, 
@@ -650,7 +628,7 @@ __global__ void
       gpuStorage->d_real,
       d_energy,
       gpuPots,
-      ptypes,
+      1,
       mode,
       vl,
       n_nb
@@ -679,10 +657,10 @@ __global__ void
     realG totalEnergy = 0;
 
     h_energy = new realG[gpuStorage->numberLocalParticles];
-    cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles);
-    cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles);
-    unsigned shared_mem_size = ptypes * ptypes * sizeof(realG) * 5;
-    cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles);
+    cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
+    cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
+    unsigned shared_mem_size = ptypes * sizeof(realG) * 5;
+    cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles); CUERR
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start); CUERR
@@ -706,7 +684,7 @@ __global__ void
                             gpuStorage->d_cellNeighbors,
                             d_energy,
                             gpuPots,
-                            ptypes,
+                            1,
                             mode
                           );
     

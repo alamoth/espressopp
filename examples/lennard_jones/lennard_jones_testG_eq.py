@@ -27,9 +27,9 @@ epsilon            = 1.0
 # Lennard Jones sigma during warmup and equilibration
 sigma              = 1.0
 # number of equilibration loops
-equil_nloops       = 1000 #10 #10 #20
+equil_nloops       = 10 #10 #10 #20
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 10 #100 #100
+equil_isteps       = 100 #100 #100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()

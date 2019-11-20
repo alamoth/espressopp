@@ -94,6 +94,7 @@ namespace espressopp {
     // Cell Data
     //
     void GPUTransfer::onRunInit(){
+      // cudaDeviceReset();
       GPUTransfer::resizeCellData();
       GPUTransfer::fillCellData();
       GPUTransfer::onDecompose();

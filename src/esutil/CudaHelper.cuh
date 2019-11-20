@@ -1,11 +1,21 @@
 #define realG double
 #define realG3 double4
-#define realG4 double4
+#define realG4 double4 
 #define make_realG3 make_double4
 #define make_realG4 make_double4
 #ifdef __NVCC__
+#define USELDG true
 
 #define SDIV(x,y)(((x)+(y)-1)/(y))
+
+template<typename T>
+__device__ __forceinline__ T ldg(const T* ptr) {
+#if USELDG == true
+    return __ldg(ptr);
+#else
+    return *ptr;
+#endif
+}
 
 __forceinline__ __device__
 realG3 warpReduceSumTriple(realG3 val, unsigned mask) {

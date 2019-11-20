@@ -216,13 +216,13 @@ __global__ void
         for(int j = 0; j < cellParticlesN[currentCellId]; ++j){
           int pOffset = cellOffsets[currentCellId] + j;
           if(pOffset != idx){
-            int potIdx = p_type * numPots + type[];
+            int potIdx = p_type * numPots + type[pOffset];
             assert(potIdx != 0);
 
             realG3 p2_pos = pos[pOffset];
-            // p_dist.x = __dsub_rn(p_pos.x, pos[cellOffsets[currentCellId] + j].x);
-            // p_dist.y = __dsub_rn(p_pos.y, pos[cellOffsets[currentCellId] + j].y);
-            // p_dist.z = __dsub_rn(p_pos.z, pos[cellOffsets[currentCellId] + j].z);
+            // p_dist.x = __dsub_rn(p_pos.x, p2_pos.x);
+            // p_dist.y = __dsub_rn(p_pos.y, p2_pos.y);
+            // p_dist.z = __dsub_rn(p_pos.z, p2_pos.z);
             p_dist.x = p_pos.x - p2_pos.x;
             p_dist.y = p_pos.y - p2_pos.y;
             p_dist.z = p_pos.z - p2_pos.z;
@@ -233,16 +233,17 @@ __global__ void
             // distSqr = __fma_rn(p_dist.z, p_dist.z, distSqr);
             if(distSqr <= (s_cutoff[potIdx] * s_cutoff[potIdx])){
             // if(distSqr <= (gpuPots[potI].cutoff * gpuPots[potI].cutoff)){
-              // if(distSqr <= __dmul_rn(gpuPots[potI].cutoff, gpuPots[potI].cutoff)){
+            // if(distSqr <= __dmul_rn(gpuPots[potI].cutoff, gpuPots[potI].cutoff)){
+            // if(distSqr <= __dmul_rn(s_cutoff[potIdx], s_cutoff[potIdx])){
               if(mode == 0){
                 frac2 = 1.0 / distSqr;
                 // frac2 = __drcp_rn(distSqr);
                 frac6 = frac2 * frac2 * frac2;
-                // realG frac6 = __dmul_rn(frac2, __dmul_rn(frac2, frac2));
+                // frac6 = __dmul_rn(frac2, __dmul_rn(frac2, frac2));
                 calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
                 // calcResult = frac6 * (gpuPots[potI].ff1 * frac6 - gpuPots[potI].ff2) * frac2;
                 // calcResult = __dmul_rn(frac6, __dmul_rn((__dsub_rn(__dmul_rn(gpuPots[potI].ff1, frac6), gpuPots[potI].ff2)), frac2));
-                // calcResult = __dmul_rn(frac6, __dmul_rn((__dsub_rn(__dmul_rn(s_ff1[potI], frac6), s_ff2[potI])), frac2));
+                // calcResult = __dmul_rn(frac6, __dmul_rn((__dsub_rn(__dmul_rn(s_ff1[potIdx], frac6), s_ff2[potIdx])), frac2));
                 // p_force.x = __fma_rn(p_dist.x, calcResult, p_force.x);
                 // p_force.y = __fma_rn(p_dist.y, calcResult, p_force.y);
                 // p_force.z = __fma_rn(p_dist.z, calcResult, p_force.z);
@@ -510,13 +511,6 @@ __global__ void
                                             cellParticles[cellNeighbors[(blockIdx.x * 27) + (3 * threadIdx.x) + 2]];
         numberLineWarps[threadIdx.x] = (numberLineParticles[threadIdx.x ] - 1) / warpSize + 1;
       }
-      // __syncthreads();
-      // if(laneId == 0 && blockIdx.x == 61){
-      //   printf("Mode: %d, BlockIdx.x %d, warpId: %d, numLinePart: %d, numLineWarps: %d, block Ids: %d %d %d\n",
-      //       mode, blockIdx.x, warpId, numberLineParticles[warpId], numberLineWarps[warpId], cellNeighbors[(blockIdx.x * 27) + (3 * warpId)],
-      //       cellNeighbors[(blockIdx.x * 27) + (3 * warpId) + 1],
-      //       cellNeighbors[(blockIdx.x * 27) + (3 * warpId) + 2]);
-      // }
       __syncthreads();
 
       for(int i = 0; i < numberLineWarps[warpId]; ++i){
@@ -628,7 +622,7 @@ __global__ void
       gpuStorage->d_real,
       d_energy,
       gpuPots,
-      1,
+      ptypes,
       mode,
       vl,
       n_nb
@@ -684,7 +678,7 @@ __global__ void
                             gpuStorage->d_cellNeighbors,
                             d_energy,
                             gpuPots,
-                            1,
+                            ptypes,
                             mode
                           );
     
@@ -701,7 +695,7 @@ __global__ void
           totalEnergy += h_energy[i];
         }
       }
-
+      cudaFree(d_energy);
       return totalEnergy / (double)2.0;
     }
   }

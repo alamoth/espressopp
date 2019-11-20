@@ -94,8 +94,8 @@ namespace espressopp {
         // }
         
         int offset = potentialArray.size_x() * type2 + type1;
-        printf("Offset: %d, size array: %d x %d, size Allocated space: %d\n", offset, potentialArray.size_x(), potentialArray.size_y()
-         ,sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y());
+        // printf("Offset: %d, size array: %d x %d, size Allocated space: %d\n", offset, potentialArray.size_x(), potentialArray.size_y()
+        //  ,sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y());
          cudaMalloc(&d_potentials, sizeof(dPotential) * potentialArray.size_x() * potentialArray.size_y()); CUERR
          cudaMemcpy(&d_potentials[offset], &h_potential, sizeof(dPotential), cudaMemcpyHostToDevice); CUERR
 

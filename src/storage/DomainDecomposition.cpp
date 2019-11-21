@@ -334,7 +334,7 @@ namespace espressopp {
 
     LOG4ESPP_DEBUG(logger, "done");
     aftCellAdjust();
-    aftAftCellAdjust();
+    //aftAftCellAdjust();
   }
 
   Cell *DomainDecomposition::mapPositionToCell(const Real3D& pos) {
@@ -546,8 +546,8 @@ namespace espressopp {
                             std::max(recvBufL.capacity(),
                                  recvBufR.capacity()))));
 
-    LOG4ESPP_DEBUG(logger, "finished exchanging particles, new send/recv buffer size " << exchangeBufferSize);
-    aftCellAdjust();
+    // LOG4ESPP_DEBUG(logger, "finished exchanging particles, new send/recv buffer size " << exchangeBufferSize);
+    // aftCellAdjust();
     aftAftCellAdjust();
     
     LOG4ESPP_DEBUG(logger, "done");

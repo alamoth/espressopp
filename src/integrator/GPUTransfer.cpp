@@ -48,6 +48,32 @@ namespace espressopp {
     GPUTransfer::GPUTransfer(shared_ptr<System> system)
     : Extension(system)
     {
+      timeTotal;
+      timeFillParticleVars = 0;
+      timeFillParticleStatics = 0;
+      timeFillCellData = 0;
+      timeGetParticleForces = 0;
+      timeResizeParticleData = 0;
+      timeResizeCellData = 0;
+
+      time = 0;
+      timeGResizeParticleData = 0;
+      timeGResizeCellData = 0;
+      timeGH2dParticleStatics = 0;
+      timeGH2dParticleVars = 0;
+      timeGH2dCellData = 0;
+      timeGD2hParticleForces = 0;
+      timeIntegrate.reset();
+
+      cOnDecompose = 0;
+      cOnGridInit = 0;
+      cFillParticleVars = 0;
+      cFillParticleStatics = 0;
+      cFillCellData = 0;
+      cGetParticleForces = 0;
+      cResizeParticleData = 0;
+      cResizeCellData = 0;
+
       // int rank;
       // int size;
       // MPI_Comm_rank( MPI_COMM_WORLD, &rank );
@@ -78,6 +104,7 @@ namespace espressopp {
       _aftInitF.disconnect();
       _aftCalcF.disconnect();
       _runInit.disconnect();
+      GPUTransfer::printTimers();
     }
 
     void GPUTransfer::connect(){
@@ -86,32 +113,48 @@ namespace espressopp {
       // _onParticlesChanged   =   integrator->gpuAftDec.connect( boost::bind(&GPUTransfer::onDecompose, this));
       _aftInitF             =   integrator->gpuBefF.connect( boost::bind(&GPUTransfer::fillParticleVars, this));
   	  _aftCalcF             =   integrator->gpuAftF.connect( boost::bind(&GPUTransfer::getParticleForces, this));
-      _runInit              =   integrator->runInit.connect ( boost::bind(&GPUTransfer::onRunInit, this));
-      _aftCellAdjust        =   system.storage->aftCellAdjust.connect ( boost::bind(&GPUTransfer::onRunInit, this));
+      //_runInit              =   integrator->runInit.connect ( boost::bind(&GPUTransfer::onRunInit, this));
+      _aftCellAdjust        =   system.storage->aftCellAdjust.connect ( boost::bind(&GPUTransfer::onGridInit, this));
+      // _aftGridInit        =   system.storage->aftCellAdjust.connect ( boost::bind(&GPUTransfer::onRunInit, this));
+      GPUTransfer::onGridInit();
     }
 
 
     // Cell Data
     //
-    void GPUTransfer::onRunInit(){
-      // cudaDeviceReset();
+    void GPUTransfer::onGridInit(){
+      // printf("onGridInit\n");
       GPUTransfer::resizeCellData();
       GPUTransfer::fillCellData();
-      GPUTransfer::onDecompose();
+
+      cOnGridInit++;
     }
+    // void GPUTransfer::onRunInit(){
+    //   printf("onRunINit\n");
+    //   GPUTransfer::resizeCellData();
+    //   GPUTransfer::fillCellData();
+    //   GPUTransfer::onDecompose();
+    // }
 
     void GPUTransfer::resizeCellData(){
+      time = timeIntegrate.getElapsedTime();
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
 
       GPUStorage->numberLocalCells = system.storage->getLocalCells().size();
+      timeResizeCellData += timeIntegrate.getElapsedTime() - time;
+
+      time = timeIntegrate.getElapsedTime();
       GPUStorage->resizeCellData();
+      timeGResizeCellData += timeIntegrate.getElapsedTime() - time;
 
       // delete mortonMapping;
       // mortonMapping = NULL;
+      cResizeCellData++;
     }
 
     void GPUTransfer::fillCellData(){
+      time = timeIntegrate.getElapsedTime(); // timer
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
       CellList localCells = system.storage->getLocalCells();
@@ -152,32 +195,47 @@ namespace espressopp {
           }
         }
       }
-      GPUStorage->h2dCellData();
 
       if(mortonSorting){
         std::remove_if(mortonMapping.begin(), mortonMapping.end(), [](int i){return i==-1;});
         mortonMapping.resize(nLocalCells);
       }
+      timeFillCellData += timeIntegrate.getElapsedTime() - time;
+
+      time = timeIntegrate.getElapsedTime();
+      GPUStorage->h2dCellData();
+      timeGH2dCellData += timeIntegrate.getElapsedTime() - time;
+
+      cFillCellData++;
     }
     // Cell Data end
 
     // On decompose, resize Particle Arrays and fill with statics
     //
     void GPUTransfer::onDecompose(){
+      // printf("onDecompose\n");
       GPUTransfer::resizeParticleData();
       GPUTransfer::fillParticleStatics();
-      GPUTransfer::fillParticleVars();
+      // GPUTransfer::fillParticleVars();
+      cOnDecompose++;
     }
 
     void GPUTransfer::resizeParticleData(){
+      time = timeIntegrate.getElapsedTime();
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
-
       GPUStorage->numberLocalParticles = system.storage->getNLocalParticles();
+      timeResizeParticleData += timeIntegrate.getElapsedTime() - time;
+
+      time = timeIntegrate.getElapsedTime();
       GPUStorage->resizeParticleData();
+      timeGResizeParticleData += timeIntegrate.getElapsedTime() - time;
+      
+      cResizeParticleData++;
     }
 
     void GPUTransfer::fillParticleStatics(){
+      time = timeIntegrate.getElapsedTime();
       System& system = getSystemRef();
       CellList localCells = system.storage->getLocalCells();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();   
@@ -207,12 +265,19 @@ namespace espressopp {
         }
       }
       GPUStorage->max_n_nb = max_n_nb;
+      timeFillParticleStatics += timeIntegrate.getElapsedTime() - time;
+
+      time = timeIntegrate.getElapsedTime();
       GPUStorage->h2dParticleStatics();
+      timeGH2dParticleStatics += timeIntegrate.getElapsedTime() - time;
+
+      cFillParticleStatics++;
     }
     // On decompose end
 
     // Copy particle Pos in each time step
     void GPUTransfer::fillParticleVars(){
+      time = timeIntegrate.getElapsedTime();
       System& system = getSystemRef();
       CellList localCells = system.storage->getLocalCells();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
@@ -228,7 +293,13 @@ namespace espressopp {
           counterParticles++;
         }
       }
+      timeFillParticleVars += timeIntegrate.getElapsedTime() - time;
+
+      time = timeIntegrate.getElapsedTime();
       GPUStorage->h2dParticleVars();
+      timeGH2dParticleVars += timeIntegrate.getElapsedTime() - time;
+
+      cFillParticleVars++;
     }
 
     // Copy forces back in each time step
@@ -237,8 +308,11 @@ namespace espressopp {
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
       CellList localCells = system.storage->getLocalCells();
 
+      time = timeIntegrate.getElapsedTime();
       GPUStorage->d2hParticleForces();
+      timeGD2hParticleForces += timeIntegrate.getElapsedTime() - time;
       
+      time = timeIntegrate.getElapsedTime();
       unsigned int counterParticles = 0;
       int i;
       for(int ii = 0; ii < localCells.size(); ++ii) {
@@ -252,6 +326,9 @@ namespace espressopp {
           counterParticles++;
         }
       }
+      timeGetParticleForces += timeIntegrate.getElapsedTime() - time;
+
+      cGetParticleForces++;
     }
 
     uint_fast32_t* GPUTransfer::to3D(uint_fast32_t idx, int xMax, int yMax, int zMax){
@@ -264,6 +341,39 @@ namespace espressopp {
 
     uint_fast32_t GPUTransfer::to1D( int x, int y, int z , int xMax, int yMax, int zMax ) {
       return (z * xMax * yMax) + (y * xMax) + x;
+    }
+
+    void GPUTransfer::printTimers() {
+      timeTotal = timeFillParticleVars + timeFillParticleStatics + timeFillCellData + timeGetParticleForces + timeResizeParticleData + timeResizeCellData + timeGResizeParticleData + timeGResizeCellData + timeGH2dParticleStatics + timeGH2dParticleVars + timeGH2dCellData + timeGD2hParticleForces;
+
+      printf("Total GPUTransfer Time: %f\n", timeTotal);
+      printf("timeFillParticleVars: %f, %f\n", timeFillParticleVars, 100 * timeFillParticleVars / timeTotal);
+      printf("timeGH2dParticleVars: %f, %f\n", timeGH2dParticleVars, 100 * timeGH2dParticleVars / timeTotal);
+
+      printf("timeFillParticleStatics: %f, %f\n", timeFillParticleStatics, 100 * timeFillParticleStatics / timeTotal);
+      printf("timeGH2dParticleStatics: %f, %f\n", timeGH2dParticleStatics, 100 * timeGH2dParticleStatics / timeTotal);
+
+      printf("timeFillCellData: %f, %f\n", timeFillCellData, 100 * timeFillCellData / timeTotal);
+      printf("timeGH2dCellData: %f, %f\n", timeGH2dCellData, 100 * timeGH2dCellData / timeTotal);
+
+      printf("timeGetParticleForces: %f, %f\n", timeGetParticleForces, 100 * timeGetParticleForces / timeTotal);
+      printf("timeGD2hParticleForces: %f, %f\n", timeGD2hParticleForces, 100 * timeGD2hParticleForces / timeTotal);
+
+      printf("timeResizeParticleData: %f, %f\n", timeResizeParticleData, 100 * timeResizeParticleData / timeTotal);
+      printf("timeGResizeParticleData: %f, %f\n", timeGResizeParticleData, 100 * timeGResizeParticleData / timeTotal);
+
+      printf("timeResizeCellData: %f, %f\n", timeResizeCellData, 100 * timeResizeCellData / timeTotal);
+      printf("timeGResizeCellData: %f, %f\n", timeGResizeCellData, 100 * timeGResizeCellData / timeTotal);
+
+      printf("cOnDecompose: %d\n", cOnDecompose);
+      printf("cOnGridInit: %d\n", cOnGridInit);
+      printf("cFillParticleVars: %d\n", cFillParticleVars);
+      printf("cFillParticleStatics: %d\n", cFillParticleStatics);
+      printf("cFillCellData: %d\n", cFillCellData);
+      printf("cGetParticleForces: %d\n", cGetParticleForces);
+      printf("cResizeParticleData: %d\n", cResizeParticleData);
+      printf("cResizeCellData: %d\n", cResizeCellData);
+
     }
 
     /****************************************************
@@ -279,6 +389,7 @@ namespace espressopp {
         ("integrator_GPUTransfer", init< shared_ptr< System > >())
         .def("connect", &GPUTransfer::connect)
         .def("disconnect", &GPUTransfer::disconnect)
+        .def("printTimers", &GPUTransfer::printTimers)
         ;
     }
 

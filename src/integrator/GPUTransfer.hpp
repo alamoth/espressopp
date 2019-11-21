@@ -31,6 +31,7 @@
 #include "boost/signals2.hpp"
 #include "Real3D.hpp"
 #include "Particle.hpp"
+#include "esutil/Timer.hpp"
 
 namespace espressopp {
   namespace integrator {
@@ -45,6 +46,7 @@ namespace espressopp {
 
         void onDecompose();
         void onRunInit();
+        void onGridInit();
 
         void fillParticleVars();
         void fillParticleStatics();
@@ -66,10 +68,36 @@ namespace espressopp {
         boost::signals2::connection _aftCalcF, _aftInitF, _onParticlesChanged, _runInit, _aftCellAdjust;
         void connect();
         void disconnect();
+        void printTimers();
 
         std::vector<int> mortonMapping;
         bool mortonSorting = true;
 
+        esutil::WallTimer timeIntegrate; // timers
+        double time;
+        double timeTotal;       
+        double timeFillParticleVars; //
+        double timeFillParticleStatics; //
+        double timeFillCellData; //
+        double timeGetParticleForces; //
+        double timeResizeParticleData; //
+        double timeResizeCellData; //
+
+        double timeGResizeParticleData; //
+        double timeGResizeCellData; //
+        double timeGH2dParticleStatics; //
+        double timeGH2dParticleVars; //
+        double timeGH2dCellData;  //
+        double timeGD2hParticleForces; //
+
+        int cOnDecompose;
+        int cOnGridInit;
+        int cFillParticleVars;
+        int cFillParticleStatics;
+        int cFillCellData;
+        int cGetParticleForces;
+        int cResizeParticleData;
+        int cResizeCellData;
 
         /** Logger */
         static LOG4ESPP_DECL_LOGGER(theLogger);

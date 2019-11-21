@@ -27,7 +27,7 @@ epsilon            = 1.0
 # Lennard Jones sigma during warmup and equilibration
 sigma              = 1.0
 # number of equilibration loops
-equil_nloops       = 10 #10 #1 #20 #10
+equil_nloops       = 1 #10 #1 #20 #10
 # number of integration steps performed in each equilibration loop
 equil_isteps       = 100 # 100
 
@@ -93,8 +93,8 @@ if (temperature != None):
   # tell the integrator to use this thermostat
   integrator.addExtension(thermostat)
 
-#GPUSupport = espressopp.integrator.GPUTransfer(system)
-#integrator.addExtension(GPUSupport)
+# GPUSupport = espressopp.integrator.GPUTransfer(system)
+# integrator.addExtension(GPUSupport)
 
 ## steps 2. and 3. could be short-cut by the following expression:
 ## system, integrator = espressopp.standard_system.Default(box, warmup_cutoff, skin, dt, temperature)
@@ -167,6 +167,8 @@ for step in range(equil_nloops):
   espressopp.tools.analyse.info(system, integrator)
 print "equilibration finished"
 end_time = time.clock()
+# GPUSupport.disconnect()
+
 espressopp.tools.analyse.final_info(system, integrator, verletlist, start_time, end_time)
 
 sys.stdout.write('Eq time = %f\n' % (end_time - start_time))

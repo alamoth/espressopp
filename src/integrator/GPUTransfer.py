@@ -37,13 +37,21 @@ from _espressopp import integrator_GPUTransfer
 
 class GPUTransferLocal(ExtensionLocal, integrator_GPUTransfer):
 
+    def printTimers(self):
+        if not (pmi._PMIComm and pmi._PMIComm.isActive()) or pmi._MPIcomm.rank in pmi._PMIComm.getMPIcpugroup():
+            self.cxxclass.printTimers(self)
+
     def __init__(self, system):
         if not (pmi._PMIComm and pmi._PMIComm.isActive()) or pmi._MPIcomm.rank in pmi._PMIComm.getMPIcpugroup():
           cxxinit(self, integrator_GPUTransfer, system)
+
+
+
 
 if pmi.isController :
     class GPUTransfer(Extension):
         __metaclass__ = pmi.Proxy
         pmiproxydefs = dict(
-            cls =  'espressopp.integrator.GPUTransferLocal'
+            cls =  'espressopp.integrator.GPUTransferLocal',
+            pmicall = [ 'printTimers ']
             )

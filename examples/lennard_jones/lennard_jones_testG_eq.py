@@ -29,7 +29,7 @@ sigma              = 1.0
 # number of equilibration loops
 equil_nloops       = 10 #10 #10 #20
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 100 #100 #100
+equil_isteps       = 1000 #100 #100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -95,6 +95,7 @@ if (temperature != None):
 
 GPUSupport = espressopp.integrator.GPUTransfer(system)
 integrator.addExtension(GPUSupport)
+# GPUSupport.printTimers()
 
 ## steps 2. and 3. could be short-cut by the following expression:
 ## system, integrator = espressopp.standard_system.Default(box, warmup_cutoff, skin, dt, temperature)
@@ -162,6 +163,7 @@ for step in range(equil_nloops):
 print "equilibration finished"
 
 end_time = time.clock()
+GPUSupport.disconnect()
 espressopp.tools.analyse.final_info(system, integrator, verletlist, start_time, end_time)
 
 sys.stdout.write('Eq time = %f\n' % (end_time - start_time))

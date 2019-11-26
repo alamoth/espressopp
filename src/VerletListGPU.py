@@ -77,6 +77,11 @@ class VerletListGPULocal(_espressopp.VerletListGPU):
                 self.cxxclass.rebuild(self)
                 
             
+    def getGPUtimer(self):
+
+        if pmi.workerIsActive():
+            return self.cxxclass.getGPUtimer(self)
+
     def totalSize(self):
 
         if pmi.workerIsActive():
@@ -116,6 +121,6 @@ if pmi.isController:
     pmiproxydefs = dict(
       cls = 'espressopp.VerletListGPULocal',
       pmiproperty = [ 'builds' ],
-      pmicall = [ 'totalSize', 'exclude', 'connect', 'disconnect', 'getVerletCutoff' ],
+      pmicall = [ 'totalSize', 'exclude', 'connect', 'disconnect', 'getVerletCutoff', 'getGPUtimer'],
     #   pmiinvoke = [ 'getAllPairs' ]
     )

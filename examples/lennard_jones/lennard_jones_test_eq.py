@@ -19,7 +19,7 @@ r_cutoff           = 2.5
 # VerletList skin size (also used for domain decomposition)
 skin               = 0.4
 # the temperature of the system
-temperature        = 1.0
+temperature        = None
 # time step for the velocity verlet integrator
 dt                 = 0.005
 # Lennard Jones epsilon during equilibration phase
@@ -156,7 +156,7 @@ start_time = time.clock()
 
 print "starting equilibration ..."
 # print inital status information
-# espressopp.tools.analyse.info(system, integrator)
+espressopp.tools.analyse.info(system, integrator)
 #sock = espressopp.tools.vmd.connect(system)
 for step in range(equil_nloops):
 

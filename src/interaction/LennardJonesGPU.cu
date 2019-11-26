@@ -29,7 +29,7 @@
 #include <math.h>
 #include <assert.h>
 #define THREADSPERBLOCK 128
-#define USELDG FALSE
+#define USELDG TRUE
 //#ifdef __NVCC__
 
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
@@ -666,9 +666,9 @@ __global__ void
     cudaEventCreate(&start); CUERR
     cudaEventCreate(&stop); CUERR
     cudaEventRecord(start); CUERR
-    testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
+    // testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
       //  testKernel2<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
-      // testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
+      testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
                             gpuStorage->numberLocalParticles, 
                             gpuStorage->numberLocalCells, 
                             gpuStorage->d_id,

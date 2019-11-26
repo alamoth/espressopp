@@ -82,7 +82,8 @@ namespace espressopp {
         double timeGetParticleForces; //
         double timeResizeParticleData; //
         double timeResizeCellData; //
-
+        double timeGPUinit;
+        
         double timeGResizeParticleData; //
         double timeGResizeCellData; //
         double timeGH2dParticleStatics; //

@@ -70,7 +70,7 @@ void verletListBuildDriver(StorageGPU* GS, int n_pt, realG cutsq, int* d_vlPairs
         d_vlPairs,
         d_n_nb,
         max_n_nb);
-    cudaDeviceSynchronize(); CUERR
+    //cudaDeviceSynchronize(); CUERR
   }
 }
 // #endif

@@ -64,6 +64,10 @@ namespace espressopp {
     cutsq = cutVerlet * cutVerlet;
     builds = 0;
 
+    time = 0;
+    timeGPUrebuild = 0;
+    timeIntegrate.reset();
+
     if (rebuildVL) rebuild(); // not called if exclutions are provided
 
   
@@ -99,6 +103,7 @@ namespace espressopp {
   
   void VerletListGPU::rebuild()
   {
+    time = timeIntegrate.getElapsedTime();
 
     int n_c_nb = 27; // no support for half cells
 
@@ -141,6 +146,7 @@ namespace espressopp {
     verletListBuildDriver(GS, n_pt, cutsq, d_vlPairs, d_n_nb, max_n_nb);
     builds++;
 
+    timeGPUrebuild += time = timeIntegrate.getElapsedTime(); - time;
   }
   
   int VerletListGPU::totalSize() const
@@ -197,7 +203,7 @@ namespace espressopp {
       .def("rebuild", &VerletListGPU::rebuild)
       .def("connect", &VerletListGPU::connect)
       .def("disconnect", &VerletListGPU::disconnect)
-    
+      .def("getGPUtimer", &VerletListGPU::getRebuildTime)
       .def("getVerletCutoff", &VerletListGPU::getVerletCutoff)
       ;
   }

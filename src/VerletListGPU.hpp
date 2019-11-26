@@ -32,6 +32,7 @@
 #include "boost/signals2.hpp"
 #include "boost/unordered_set.hpp"
 #include <cuda_runtime.h>
+#include "esutil/Timer.hpp"
 
 namespace espressopp {
 
@@ -88,6 +89,8 @@ namespace espressopp {
     /** Set the number of times the Verlet list has been rebuilt */
     void setBuilds(int _builds) { builds = _builds; }
 
+    double getRebuildTime() const { return timeGPUrebuild; }
+
     /** Register this class so it can be used from Python. */
     static void registerPython();
 
@@ -102,6 +105,9 @@ namespace espressopp {
     int max_n_nb;
     int n_pt;
 
+    esutil::WallTimer timeIntegrate; // timers
+    double time;
+    double timeGPUrebuild;
 
     boost::unordered_set<std::pair<longint, longint> > exList; // exclusion list
     

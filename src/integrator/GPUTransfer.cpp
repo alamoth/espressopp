@@ -34,6 +34,7 @@
 #include <math.h>
 #include <inttypes.h>
 #include <algorithm>
+#include <chrono>
 
 namespace espressopp {
 
@@ -74,28 +75,35 @@ namespace espressopp {
       cResizeParticleData = 0;
       cResizeCellData = 0;
 
-      // int rank;
-      // int size;
-      // MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-      // MPI_Comm_rank( MPI_COMM_WORLD, &size );
-      // cudaError_t err;
-      // int dev_cnt = 0;
-      // err = cudaGetDeviceCount( &dev_cnt );
-      // assert( err == cudaSuccess || err == cudaErrorNoDevice );
-      // printf( "rank %d, mpi size: %d, cnt %d\n", rank, size, dev_cnt );
+      int* d_init;
       
-      // cudaDeviceProp prop;
-      // for (int dev = 0; dev < dev_cnt; ++dev) {
-      //     err = cudaGetDeviceProperties( &prop, dev );
-      //     assert( err == cudaSuccess );
-      //     printf( "rank %d, dev %d, prop %s, pci %d, %d, %d\n",
-      //             rank, dev,
-      //             prop.name,
-      //             prop.pciBusID,
-      //             prop.pciDeviceID,
-      //             prop.pciDomainID );
-      //     // printf("unique id: %.*s\n", (int)sizeof(prop.uuid), prop.uuid);
-      // }
+      time = timeIntegrate.getElapsedTime();
+      cudaMalloc(&d_init, 1);
+      timeGPUinit += time = timeIntegrate.getElapsedTime(); - time;
+
+      int rank;
+      int size;
+      MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+      MPI_Comm_rank( MPI_COMM_WORLD, &size );
+      cudaError_t err;
+      int dev_cnt = 0;
+      err = cudaGetDeviceCount( &dev_cnt );
+      assert( err == cudaSuccess || err == cudaErrorNoDevice );
+      printf( "rank %d, mpi size: %d, cnt %d\n", rank, size, dev_cnt );
+      
+      cudaDeviceProp prop;
+      for (int dev = 0; dev < dev_cnt; ++dev) {
+          err = cudaGetDeviceProperties( &prop, dev );
+          assert( err == cudaSuccess );
+          printf( "rank %d, dev %d, prop %s, pci %d, %d, %d\n",
+                  rank, dev,
+                  prop.name,
+                  prop.pciBusID,
+                  prop.pciDeviceID,
+                  prop.pciDomainID );
+          // printf("unique id: %.*s\n", (int)sizeof(prop.uuid), prop.uuid);
+      }
+      // cudaSetDevice(7);
 
     }
 
@@ -113,7 +121,7 @@ namespace espressopp {
       // _onParticlesChanged   =   integrator->gpuAftDec.connect( boost::bind(&GPUTransfer::onDecompose, this));
       _aftInitF             =   integrator->gpuBefF.connect( boost::bind(&GPUTransfer::fillParticleVars, this));
   	  _aftCalcF             =   integrator->gpuAftF.connect( boost::bind(&GPUTransfer::getParticleForces, this));
-      //_runInit              =   integrator->runInit.connect ( boost::bind(&GPUTransfer::onRunInit, this));
+      //_runInit              =   integrator->runInit.connect ( boost::bind(&GPUTransfer::onRunInit, this)); 
       _aftCellAdjust        =   system.storage->aftCellAdjust.connect ( boost::bind(&GPUTransfer::onGridInit, this));
       // _aftGridInit        =   system.storage->aftCellAdjust.connect ( boost::bind(&GPUTransfer::onRunInit, this));
       GPUTransfer::onGridInit();
@@ -213,10 +221,9 @@ namespace espressopp {
     // On decompose, resize Particle Arrays and fill with statics
     //
     void GPUTransfer::onDecompose(){
-      // printf("onDecompose\n");
       GPUTransfer::resizeParticleData();
       GPUTransfer::fillParticleStatics();
-      // GPUTransfer::fillParticleVars();
+      GPUTransfer::fillParticleVars(); // can be uncommented to show correct Step 0 values.
       cOnDecompose++;
     }
 
@@ -345,25 +352,27 @@ namespace espressopp {
 
     void GPUTransfer::printTimers() {
       timeTotal = timeFillParticleVars + timeFillParticleStatics + timeFillCellData + timeGetParticleForces + timeResizeParticleData + timeResizeCellData + timeGResizeParticleData + timeGResizeCellData + timeGH2dParticleStatics + timeGH2dParticleVars + timeGH2dCellData + timeGD2hParticleForces;
+      // +timeGPUinit;
 
-      printf("Total GPUTransfer Time: %f\n", timeTotal);
-      printf("timeFillParticleVars: %f, %f\n", timeFillParticleVars, 100 * timeFillParticleVars / timeTotal);
-      printf("timeGH2dParticleVars: %f, %f\n", timeGH2dParticleVars, 100 * timeGH2dParticleVars / timeTotal);
+      printf("timeGPUinit: %f.3\n", timeGPUinit);
+      printf("Total GPUTransfer Time: %.3fs\n", timeTotal);
+      printf("timeFillParticleVars: %.3f s, %.3f %%\n", timeFillParticleVars, 100 * timeFillParticleVars / timeTotal);
+      printf("timeGH2dParticleVars: %.3f s, %.3f %%\n", timeGH2dParticleVars, 100 * timeGH2dParticleVars / timeTotal);
 
-      printf("timeFillParticleStatics: %f, %f\n", timeFillParticleStatics, 100 * timeFillParticleStatics / timeTotal);
-      printf("timeGH2dParticleStatics: %f, %f\n", timeGH2dParticleStatics, 100 * timeGH2dParticleStatics / timeTotal);
+      printf("timeFillParticleStatics: %.3f s, %.3f %%\n", timeFillParticleStatics, 100 * timeFillParticleStatics / timeTotal);
+      printf("timeGH2dParticleStatics: %.3f s, %.3f %%\n", timeGH2dParticleStatics, 100 * timeGH2dParticleStatics / timeTotal);
 
-      printf("timeFillCellData: %f, %f\n", timeFillCellData, 100 * timeFillCellData / timeTotal);
-      printf("timeGH2dCellData: %f, %f\n", timeGH2dCellData, 100 * timeGH2dCellData / timeTotal);
+      printf("timeFillCellData: %.3f s, %.3f %%\n", timeFillCellData, 100 * timeFillCellData / timeTotal);
+      printf("timeGH2dCellData: %.3f s, %.3f %%\n", timeGH2dCellData, 100 * timeGH2dCellData / timeTotal);
 
-      printf("timeGetParticleForces: %f, %f\n", timeGetParticleForces, 100 * timeGetParticleForces / timeTotal);
-      printf("timeGD2hParticleForces: %f, %f\n", timeGD2hParticleForces, 100 * timeGD2hParticleForces / timeTotal);
+      printf("timeGetParticleForces: %.3f s, %.3f %%\n", timeGetParticleForces, 100 * timeGetParticleForces / timeTotal);
+      printf("timeGD2hParticleForces: %.3f s, %.3f %%\n", timeGD2hParticleForces, 100 * timeGD2hParticleForces / timeTotal);
 
-      printf("timeResizeParticleData: %f, %f\n", timeResizeParticleData, 100 * timeResizeParticleData / timeTotal);
-      printf("timeGResizeParticleData: %f, %f\n", timeGResizeParticleData, 100 * timeGResizeParticleData / timeTotal);
+      printf("timeResizeParticleData: %.3f s, %.3f %%\n", timeResizeParticleData, 100 * timeResizeParticleData / timeTotal);
+      printf("timeGResizeParticleData: %.3f s, %.3f %%\n", timeGResizeParticleData, 100 * timeGResizeParticleData / timeTotal);
 
-      printf("timeResizeCellData: %f, %f\n", timeResizeCellData, 100 * timeResizeCellData / timeTotal);
-      printf("timeGResizeCellData: %f, %f\n", timeGResizeCellData, 100 * timeGResizeCellData / timeTotal);
+      printf("timeResizeCellData: %.3f s, %.3f %%\n", timeResizeCellData, 100 * timeResizeCellData / timeTotal);
+      printf("timeGResizeCellData: %.3f s, %.3f %%\n", timeGResizeCellData, 100 * timeGResizeCellData / timeTotal);
 
       printf("cOnDecompose: %d\n", cOnDecompose);
       printf("cOnGridInit: %d\n", cOnGridInit);

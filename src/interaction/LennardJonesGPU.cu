@@ -28,7 +28,7 @@
 #include "LennardJonesGPU.cuh"
 #include <math.h>
 #include <assert.h>
-#define THREADSPERBLOCK 128
+#define THREADSPERBLOCK 1024
 #define USELDG TRUE
 //#ifdef __NVCC__
 
@@ -186,51 +186,78 @@ __global__ void
           s_ff1[threadIdx.x] = gpuPots[threadIdx.x].ff1;
           s_ff2[threadIdx.x] = gpuPots[threadIdx.x].ff2;
       }
-      __syncthreads();
-      
-      
+
       if (idx >= nPart) return;
       if (!real[idx]) return;
 
+      // __shared__ realG3 s_pos1[THREADSPERBLOCK];
+      //__shared__ realG3 s_pos2[THREADSPERBLOCK];
+      // __shared__ int s_type[THREADSPERBLOCK];
+      // __shared__ int s_cellId[THREADSPERBLOCK];
+      // __shared__ realG3 s_force[THREADSPERBLOCK];
+      // __shared__ realG s_energy[THREADSPERBLOCK];
+      __syncthreads();
+      
+      
+
+
       realG3 p_pos = pos[idx];
+      // s_pos1[threadIdx.x] = pos[idx];
       //realG p_mass = mass[idx];
       //realG p_drift = drift[idx];
       int p_type = ldg(type+idx);
+      // s_type[threadIdx.x] = ldg(type+idx);
       int p_cellId = cellId[idx];
+      // s_cellId[threadIdx.x] = ldg(cellId+idx);
       realG3 p_force = make_realG3(0.0,0.0,0.0,0.0);
+      // s_force[threadIdx.x] =  make_realG3(0.0,0.0,0.0,0.0);
       realG p_energy = 0;
+      // s_energy[threadIdx.x] = 0;
       //#pragma unroll
       for(int i = 0; i < 27; ++i){
         int currentCellId = ldg(cellNeighbors+(p_cellId * 27 + i));
+        // int currentCellId = ldg(cellNeighbors+(s_cellId[threadIdx.x] * 27 + i));
         int sizeCell = ldg(cellParticlesN+currentCellId);
         for(int j = 0; j < sizeCell; ++j){
           int pOffset = ldg(cellOffsets+currentCellId) + j;
           if(pOffset != idx){
             int potIdx = p_type * numPots + ldg(type+pOffset);
+            // int potIdx = s_type[threadIdx.x] * numPots + ldg(type+pOffset);
             realG3 p2_pos = pos[pOffset];
+            // s_pos2[idx] = pos[pOffset];
             realG3 p_dist;
+            // p_dist.x = s_pos1[threadIdx.x].x - p2_pos.x;
+            // p_dist.y = s_pos1[threadIdx.x].y - p2_pos.y;
+            // p_dist.z = s_pos1[threadIdx.x].z - p2_pos.z;               
+            // p_dist.x = s_pos1[idx].x - s_pos2[idx].x;
+            // p_dist.y = s_pos1[idx].y - s_pos2[idx].y;
+            // p_dist.z = s_pos1[idx].z - s_pos2[idx].z;            
             p_dist.x = p_pos.x - p2_pos.x;
             p_dist.y = p_pos.y - p2_pos.y;
             p_dist.z = p_pos.z - p2_pos.z;
             realG distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
             if(distSqr <= (s_cutoff[potIdx] * s_cutoff[potIdx])){
-            // if(distSqr <= (gpuPots[potI].cutoff * gpuPots[potI].cutoff)){
+            // if(distSqr <= (gpuPots[potIdx].cutoff * gpuPots[potIdx].cutoff)){
               if(mode == 0){
                 realG frac2 = 1.0 / distSqr;
                 realG frac6 = frac2 * frac2 * frac2;
                 realG calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
-                // realG calcResult = frac6 * (gpuPots[potI].ff1 * frac6 - gpuPots[potI].ff2) * frac2;
+                // realG calcResult = frac6 * (gpuPots[potIdx].ff1 * frac6 - gpuPots[potIdx].ff2) * frac2;
                 p_force.x += p_dist.x * calcResult;
                 p_force.y += p_dist.y * calcResult;
                 p_force.z += p_dist.z * calcResult;
+                // s_force[threadIdx.x].x += p_dist.x * calcResult;
+                // s_force[threadIdx.x].y += p_dist.y * calcResult;
+                // s_force[threadIdx.x].z += p_dist.z * calcResult;
               }
               if(mode == 1){
                 realG frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;
-                // realG frac2 = gpuPots[potI].sigma * gpuPots[potI].sigma / distSqr;
+                // realG frac2 = gpuPots[potIdx].sigma * gpuPots[potIdx].sigma / distSqr;
                 realG frac6 = frac2 * frac2 * frac2;
                 realG calcResult = 4.0 * s_epsilon[potIdx] * (frac6 * frac6 - frac6);
-                // realG calcResult = 4.0 * gpuPots[potI].epsilon * (frac6 * frac6 - frac6);
+                // realG calcResult = 4.0 * gpuPots[potIdx].epsilon * (frac6 * frac6 - frac6);
                 p_energy += calcResult;
+                // s_energy[threadIdx.x] += calcResult;
               }
             }
           }
@@ -238,10 +265,12 @@ __global__ void
       }
       if(mode == 0){
         force[idx] = p_force;
+        // force[idx] = s_force[threadIdx.x];
       }
 
       if(mode == 1){
         energy[idx] = p_energy;
+        // energy[idx] = s_energy[threadIdx.x];
       }
     }
     __global__ void 
@@ -620,6 +649,7 @@ __global__ void
     cudaEventCreate(&start); CUERR
     cudaEventCreate(&stop); CUERR
     cudaEventRecord(start); CUERR
+    // testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK>>>(
     testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
       //  testKernel2<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
       // testKernel3<<<gpuStorage->numberLocalCells, 288>>>(

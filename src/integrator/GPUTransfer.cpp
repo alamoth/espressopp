@@ -103,7 +103,7 @@ namespace espressopp {
                   prop.pciDomainID );
           // printf("unique id: %.*s\n", (int)sizeof(prop.uuid), prop.uuid);
       }
-      // cudaSetDevice(6);
+      cudaSetDevice(6);
 
     }
 
@@ -354,7 +354,7 @@ namespace espressopp {
       timeTotal = timeFillParticleVars + timeFillParticleStatics + timeFillCellData + timeGetParticleForces + timeResizeParticleData + timeResizeCellData + timeGResizeParticleData + timeGResizeCellData + timeGH2dParticleStatics + timeGH2dParticleVars + timeGH2dCellData + timeGD2hParticleForces;
       // +timeGPUinit;
 
-      printf("Time for GPU init:        %f.3\n", timeGPUinit);
+      printf("Time for GPU init:        %.3fs\n", timeGPUinit);
       printf("Total GPUTransfer Time:   %.3fs\n", timeTotal);
       printf("timeFillParticleVars:     %.3f s, %.3f %%\n", timeFillParticleVars, 100 * timeFillParticleVars / timeTotal);
       printf("timeGH2dParticleVars:     %.3f s, %.3f %%\n", timeGH2dParticleVars, 100 * timeGH2dParticleVars / timeTotal);

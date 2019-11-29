@@ -29,7 +29,7 @@ sigma              = 1.0
 # number of equilibration loops
 equil_nloops       = 1 #10 #10 #20
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 50 #100 #100
+equil_isteps       = 10000 #100 #100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -131,7 +131,7 @@ system.storage.decompose()
 verletlist = None
 interaction = espressopp.interaction.CellListLennardJonesGPU(system.storage)
 
-GPUSupport.enableSorting()
+# GPUSupport.enableSorting()
 
 potential = interaction.setPotential(type1=0, type2=0, potential=espressopp.interaction.LennardJonesGPU(epsilon=epsilon, sigma=sigma, cutoff=r_cutoff, shift=0.0))
 

@@ -51,11 +51,12 @@ __device__ double atomicAdd(double* address, double val)
 
 template<typename T>
 __device__ __forceinline__ T ldg(const T* ptr) {
-#if USELDG == TRUE
-    return __ldg(ptr);
-#else
-    return *ptr;
-#endif
+return *ptr;
+// #if USELDG == TRUE
+//     return __ldg(ptr);
+// #else
+//     return *ptr;
+// #endif
 }
 
 namespace espressopp {
@@ -103,7 +104,6 @@ __global__ void
       int p_type = ldg(type+idx);
       //realG p_mass = mass[idx];
       //realG p_drift = drift[idx];
-      // int p_cellId = cellId[idx];
       realG3 p_force = make_realG3(0.0,0.0,0.0,0.0);
       realG3 p_dist;
       realG distSqr = 0;
@@ -117,16 +117,8 @@ __global__ void
 
       for(int i = 0; i < n_nb; ++i){
         int p2_idx = ldg(vl+(i * nPart + idx));
-        
-        // assert(p2_idx != idx);
-        // assert(p2_idx < nPart);
-        // if(p2_idx == -1){
-        //   printf("idx: %d, i: %d, numMb: %d\n", idx, i, n_nb);
-        // }
-        // assert(p2_idx != -1);
 
         potIdx = p_type * numPots + ldg(type+p2_idx);
-        // assert(potIdx != 0);
         p2_pos = pos[p2_idx];
 
         p_dist.x = p_pos.x - p2_pos.x;
@@ -141,8 +133,6 @@ __global__ void
             p_force.x += p_dist.x * calcResult;
             p_force.y += p_dist.y * calcResult;
             p_force.z += p_dist.z * calcResult;
-            // printf("Particle[%d] check against %d (%s)\n", idx, p2_idx, real[p2_idx]? "real":"ghost");
-
           }
           if(mode == 1){
             frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;
@@ -154,10 +144,6 @@ __global__ void
       }
 
       if(mode == 0){
-        // p_force.x *= real[idx];
-        // p_force.y *= real[idx];
-        // p_force.z *= real[idx];
-
         force[idx] = p_force;
       }
 
@@ -210,7 +196,6 @@ __global__ void
       //realG p_mass = mass[idx];
       //realG p_drift = drift[idx];
       int p_type = ldg(type+idx);
-      //int p_real = real[idx] ? 1 : 0;
       int p_cellId = cellId[idx];
       realG3 p_force = make_realG3(0.0,0.0,0.0,0.0);
       realG p_energy = 0;
@@ -222,47 +207,29 @@ __global__ void
           int pOffset = ldg(cellOffsets+currentCellId) + j;
           if(pOffset != idx){
             int potIdx = p_type * numPots + ldg(type+pOffset);
-            assert(potIdx != 0);
-
             realG3 p2_pos = pos[pOffset];
-            // p_dist.x = __dsub_rn(p_pos.x, p2_pos.x);
-            // p_dist.y = __dsub_rn(p_pos.y, p2_pos.y);
-            // p_dist.z = __dsub_rn(p_pos.z, p2_pos.z);
             realG3 p_dist;
             p_dist.x = p_pos.x - p2_pos.x;
             p_dist.y = p_pos.y - p2_pos.y;
             p_dist.z = p_pos.z - p2_pos.z;
             realG distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
-            // distSqr = 0;
-            // distSqr = __fma_rn(p_dist.x, p_dist.x, distSqr);
-            // distSqr = __fma_rn(p_dist.y, p_dist.y, distSqr);
-            // distSqr = __fma_rn(p_dist.z, p_dist.z, distSqr);
             if(distSqr <= (s_cutoff[potIdx] * s_cutoff[potIdx])){
             // if(distSqr <= (gpuPots[potI].cutoff * gpuPots[potI].cutoff)){
-            // if(distSqr <= __dmul_rn(gpuPots[potI].cutoff, gpuPots[potI].cutoff)){
-            // if(distSqr <= __dmul_rn(s_cutoff[potIdx], s_cutoff[potIdx])){
               if(mode == 0){
                 realG frac2 = 1.0 / distSqr;
-                // frac2 = __drcp_rn(distSqr);
                 realG frac6 = frac2 * frac2 * frac2;
-                // frac6 = __dmul_rn(frac2, __dmul_rn(frac2, frac2));
                 realG calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
-                // calcResult = frac6 * (gpuPots[potI].ff1 * frac6 - gpuPots[potI].ff2) * frac2;
-                // calcResult = __dmul_rn(frac6, __dmul_rn((__dsub_rn(__dmul_rn(gpuPots[potI].ff1, frac6), gpuPots[potI].ff2)), frac2));
-                // calcResult = __dmul_rn(frac6, __dmul_rn((__dsub_rn(__dmul_rn(s_ff1[potIdx], frac6), s_ff2[potIdx])), frac2));
-                // p_force.x = __fma_rn(p_dist.x, calcResult, p_force.x);
-                // p_force.y = __fma_rn(p_dist.y, calcResult, p_force.y);
-                // p_force.z = __fma_rn(p_dist.z, calcResult, p_force.z);
+                // realG calcResult = frac6 * (gpuPots[potI].ff1 * frac6 - gpuPots[potI].ff2) * frac2;
                 p_force.x += p_dist.x * calcResult;
                 p_force.y += p_dist.y * calcResult;
                 p_force.z += p_dist.z * calcResult;
               }
               if(mode == 1){
                 realG frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;
-                // frac2 = gpuPots[potI].sigma * gpuPots[potI].sigma / distSqr;
+                // realG frac2 = gpuPots[potI].sigma * gpuPots[potI].sigma / distSqr;
                 realG frac6 = frac2 * frac2 * frac2;
                 realG calcResult = 4.0 * s_epsilon[potIdx] * (frac6 * frac6 - frac6);
-                // calcResult = 4.0 * gpuPots[potI].epsilon * (frac6 * frac6 - frac6);
+                // realG calcResult = 4.0 * gpuPots[potI].epsilon * (frac6 * frac6 - frac6);
                 p_energy += calcResult;
               }
             }
@@ -295,7 +262,6 @@ __global__ void
                 const d_LennardJonesGPU* gpuPots,
                 const int numPots,
                 const int mode){
-      // int idx = blockIdx.x * blockDim.x + threadIdx.x;
       // __shared__ realG3 s_pos[THREADSPERBLOCK];
       __shared__ realG s_pos_x[THREADSPERBLOCK];
       __shared__ realG s_pos_y[THREADSPERBLOCK];
@@ -545,9 +511,6 @@ __global__ void
             potI = t_type * numPots + type[calcCellOffset + j];
             sameId = t_id == id[calcCellOffset + j] ? true : false;
 
-            // p_dist.x = pos[calcCellOffset + j].x - pos[dataOffset + i * warpSize + laneId].x;
-            // p_dist.y = pos[calcCellOffset + j].y - pos[dataOffset + i * warpSize + laneId].y;
-            // p_dist.z = pos[calcCellOffset + j].z - pos[dataOffset + i * warpSize + laneId].z;
             p_dist.x = pos[calcCellOffset + j].x - t_pos_x;
             p_dist.y = pos[calcCellOffset + j].y - t_pos_y;
             p_dist.z = pos[calcCellOffset + j].z - t_pos_z;
@@ -576,29 +539,20 @@ __global__ void
             //__syncwarp();
             if(mode == 0){
               p_force = warpReduceSumTriple(p_force, mask);
-              // p_force = blockReduceSumTriple(p_force);
               if(laneId == 0){
-              // if(threadIdx.x == 0){
                 atomicAdd(&force[calcCellOffset + j].x, p_force.x);
                 atomicAdd(&force[calcCellOffset + j].y, p_force.y);
                 atomicAdd(&force[calcCellOffset + j].z, p_force.z);
               }
             }
             if(mode == 1){
-              // p_energy = blockReduceSum(p_energy);
               p_energy = warpReduceSum(p_energy, mask);
               if(laneId == 0){
-              // if(threadIdx.x == 0){
                   atomicAdd(&energy[calcCellOffset + j], p_energy);
-                // energy[calcCellOffset + j] += p_energy;
               }
             }
-            //__syncwarp();
-            // __syncthreads();
           }
         }
-        //__syncwarp();
-        // __syncthreads();
       }
     }
     
@@ -639,7 +593,7 @@ __global__ void
     cudaEventSynchronize(stop); CUERR
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop); CUERR
-    // printf("%s kernel time: %2.6f\n", mode==0? "Force" : "Energy", milliseconds);
+    printf("%s kernel time: %2.6f\n", mode==0? "Force" : "Energy", milliseconds);
       if(mode == 1) {
         cudaMemcpy(h_energy, d_energy, sizeof(realG) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost); CUERR
         for (int i = 0; i < gpuStorage->numberLocalParticles; ++i){ 
@@ -666,9 +620,9 @@ __global__ void
     cudaEventCreate(&start); CUERR
     cudaEventCreate(&stop); CUERR
     cudaEventRecord(start); CUERR
-    // testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
+    testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
       //  testKernel2<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
-      testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
+      // testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
                             gpuStorage->numberLocalParticles, 
                             gpuStorage->numberLocalCells, 
                             gpuStorage->d_id,
@@ -694,7 +648,7 @@ __global__ void
     cudaEventSynchronize(stop); CUERR
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop); CUERR
-    // printf("%s kernel time: %2.6f\n", mode==0? "Force" : "Energy", milliseconds);
+    printf("%s kernel time: %2.6f\n", mode==0? "Force" : "Energy", milliseconds);
       if(mode == 1) {
         cudaMemcpy(h_energy, d_energy, sizeof(realG) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost); CUERR
         for (int i = 0; i < gpuStorage->numberLocalParticles; ++i){ 

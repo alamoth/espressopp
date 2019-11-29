@@ -103,7 +103,7 @@ namespace espressopp {
                   prop.pciDomainID );
           // printf("unique id: %.*s\n", (int)sizeof(prop.uuid), prop.uuid);
       }
-      // cudaSetDevice(7);
+      // cudaSetDevice(6);
 
     }
 
@@ -354,35 +354,25 @@ namespace espressopp {
       timeTotal = timeFillParticleVars + timeFillParticleStatics + timeFillCellData + timeGetParticleForces + timeResizeParticleData + timeResizeCellData + timeGResizeParticleData + timeGResizeCellData + timeGH2dParticleStatics + timeGH2dParticleVars + timeGH2dCellData + timeGD2hParticleForces;
       // +timeGPUinit;
 
-      printf("timeGPUinit: %f.3\n", timeGPUinit);
-      printf("Total GPUTransfer Time: %.3fs\n", timeTotal);
-      printf("timeFillParticleVars: %.3f s, %.3f %%\n", timeFillParticleVars, 100 * timeFillParticleVars / timeTotal);
-      printf("timeGH2dParticleVars: %.3f s, %.3f %%\n", timeGH2dParticleVars, 100 * timeGH2dParticleVars / timeTotal);
+      printf("Time for GPU init:        %f.3\n", timeGPUinit);
+      printf("Total GPUTransfer Time:   %.3fs\n", timeTotal);
+      printf("timeFillParticleVars:     %.3f s, %.3f %%\n", timeFillParticleVars, 100 * timeFillParticleVars / timeTotal);
+      printf("timeGH2dParticleVars:     %.3f s, %.3f %%\n", timeGH2dParticleVars, 100 * timeGH2dParticleVars / timeTotal);
 
-      printf("timeFillParticleStatics: %.3f s, %.3f %%\n", timeFillParticleStatics, 100 * timeFillParticleStatics / timeTotal);
-      printf("timeGH2dParticleStatics: %.3f s, %.3f %%\n", timeGH2dParticleStatics, 100 * timeGH2dParticleStatics / timeTotal);
+      printf("timeFillParticleStatics:  %.3f s, %.3f %%\n", timeFillParticleStatics, 100 * timeFillParticleStatics / timeTotal);
+      printf("timeGH2dParticleStatics:  %.3f s, %.3f %%\n", timeGH2dParticleStatics, 100 * timeGH2dParticleStatics / timeTotal);
 
-      printf("timeFillCellData: %.3f s, %.3f %%\n", timeFillCellData, 100 * timeFillCellData / timeTotal);
-      printf("timeGH2dCellData: %.3f s, %.3f %%\n", timeGH2dCellData, 100 * timeGH2dCellData / timeTotal);
+      printf("timeFillCellData:         %.3f s, %.3f %%\n", timeFillCellData, 100 * timeFillCellData / timeTotal);
+      printf("timeGH2dCellData:         %.3f s, %.3f %%\n", timeGH2dCellData, 100 * timeGH2dCellData / timeTotal);
 
-      printf("timeGetParticleForces: %.3f s, %.3f %%\n", timeGetParticleForces, 100 * timeGetParticleForces / timeTotal);
-      printf("timeGD2hParticleForces: %.3f s, %.3f %%\n", timeGD2hParticleForces, 100 * timeGD2hParticleForces / timeTotal);
+      printf("timeGetParticleForces:    %.3f s, %.3f %%\n", timeGetParticleForces, 100 * timeGetParticleForces / timeTotal);
+      printf("timeGD2hParticleForces:   %.3f s, %.3f %%\n", timeGD2hParticleForces, 100 * timeGD2hParticleForces / timeTotal);
 
-      printf("timeResizeParticleData: %.3f s, %.3f %%\n", timeResizeParticleData, 100 * timeResizeParticleData / timeTotal);
-      printf("timeGResizeParticleData: %.3f s, %.3f %%\n", timeGResizeParticleData, 100 * timeGResizeParticleData / timeTotal);
+      printf("timeResizeParticleData:   %.3f s, %.3f %%\n", timeResizeParticleData, 100 * timeResizeParticleData / timeTotal);
+      printf("timeGResizeParticleData:  %.3f s, %.3f %%\n", timeGResizeParticleData, 100 * timeGResizeParticleData / timeTotal);
 
-      printf("timeResizeCellData: %.3f s, %.3f %%\n", timeResizeCellData, 100 * timeResizeCellData / timeTotal);
-      printf("timeGResizeCellData: %.3f s, %.3f %%\n", timeGResizeCellData, 100 * timeGResizeCellData / timeTotal);
-
-      printf("cOnDecompose: %d\n", cOnDecompose);
-      printf("cOnGridInit: %d\n", cOnGridInit);
-      printf("cFillParticleVars: %d\n", cFillParticleVars);
-      printf("cFillParticleStatics: %d\n", cFillParticleStatics);
-      printf("cFillCellData: %d\n", cFillCellData);
-      printf("cGetParticleForces: %d\n", cGetParticleForces);
-      printf("cResizeParticleData: %d\n", cResizeParticleData);
-      printf("cResizeCellData: %d\n", cResizeCellData);
-
+      printf("timeResizeCellData:       %.3f s, %.3f %%\n", timeResizeCellData, 100 * timeResizeCellData / timeTotal);
+      printf("timeGResizeCellData:      %.3f s, %.3f %%\n", timeGResizeCellData, 100 * timeGResizeCellData / timeTotal);
     }
 
     /****************************************************
@@ -399,6 +389,8 @@ namespace espressopp {
         .def("connect", &GPUTransfer::connect)
         .def("disconnect", &GPUTransfer::disconnect)
         .def("printTimers", &GPUTransfer::printTimers)
+        .def("disableSorting", &GPUTransfer::disableSorting)
+        .def("enableSorting", &GPUTransfer::enableSorting)
         ;
     }
 

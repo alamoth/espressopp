@@ -59,6 +59,9 @@ namespace espressopp {
         uint_fast32_t* to3D(uint_fast64_t idx, int xMax, int yMax, int zMax);
         uint_fast64_t  to1D( int x, int y, int z , int xMax, int yMax, int zMax );
 
+        void enableSorting() { mortonSorting = true; }
+        void disableSorting() { mortonSorting = false; }
+
         virtual ~GPUTransfer() {};
 
         /** Register this class so it can be used from Python. */
@@ -71,7 +74,7 @@ namespace espressopp {
         void printTimers();
 
         std::vector<int> mortonMapping;
-        bool mortonSorting = true;
+        bool mortonSorting = false;
 
         esutil::WallTimer timeIntegrate; // timers
         double time;

@@ -85,7 +85,7 @@ sigma              = 1.0
 # interaction cut-off used during the warm-up phase
 warmup_cutoff      = pow(2.0, 1.0/6.0)
 # number of warm-up loops
-warmup_nloops      = 100
+warmup_nloops      = 1000
 # number of integration steps performed in each warm-up loop
 warmup_isteps      = 200
 # total number of integration steps of the warm-up phase
@@ -99,9 +99,9 @@ epsilon_delta      = (epsilon_end - epsilon_start) / warmup_nloops
 # force capping radius
 capradius          = 0.6
 # number of equilibration loops
-equil_nloops       = 100
+equil_nloops       = 1
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 100
+equil_isteps       = 1
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -235,7 +235,7 @@ system.removeInteraction(0)
 # verlet list is not needed any more and would waste only CPU time
 verletlist.disconnect()
 
-espressopp.tools.writexyz("1000000Eq", system, velocities = False, unfolded = False)
+espressopp.tools.writexyz(str(Npart)+'Eq', system, velocities = False, unfolded = False)
 
 
 ########################################################################

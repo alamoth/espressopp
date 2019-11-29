@@ -95,7 +95,6 @@ if (temperature != None):
 
 GPUSupport = espressopp.integrator.GPUTransfer(system)
 integrator.addExtension(GPUSupport)
-# GPUSupport.printTimers()
 
 ## steps 2. and 3. could be short-cut by the following expression:
 ## system, integrator = espressopp.standard_system.Default(box, warmup_cutoff, skin, dt, temperature)
@@ -126,12 +125,13 @@ system.storage.decompose()
 # 7. setting up interaction potential for the equilibration            #
 ########################################################################
 
-# verletlist  = espressopp.VerletList(system, r_cutoff)
 # verletlist = espressopp.VerletListGPU(system, r_cutoff)
 # interaction = espressopp.interaction.VerletListLennadJonesGPU(system.storage, verletlist)
 
 verletlist = None
 interaction = espressopp.interaction.CellListLennardJonesGPU(system.storage)
+
+GPUSupport.enableSorting()
 
 potential = interaction.setPotential(type1=0, type2=0, potential=espressopp.interaction.LennardJonesGPU(epsilon=epsilon, sigma=sigma, cutoff=r_cutoff, shift=0.0))
 
@@ -163,7 +163,7 @@ for step in range(equil_nloops):
 print "equilibration finished"
 
 end_time = time.clock()
-GPUSupport.disconnect()
+GPUSupport.printTimers()
 espressopp.tools.analyse.final_info(system, integrator, verletlist, start_time, end_time)
 sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
 

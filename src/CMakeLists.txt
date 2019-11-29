@@ -58,12 +58,7 @@ add_library(_espressopp ${ESPRESSO_SOURCES})
 # if(CUDA)
 target_compile_features(_espressopp PUBLIC cxx_std_11)
 set_target_properties(_espressopp PROPERTIES CUDA_SEPERABLE_COMPILATION ON)
-set_target_properties(_espressopp PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-# target_compile_options(_espressopp PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
-#                            --generate-line-info
-#                            >)                   
-# endif(CUDA)
-        
+set_target_properties(_espressopp PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)        
 
 
 target_link_libraries(_espressopp ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${MPI_LIBRARIES} ${FFTW3_LIBRARIES} ${VAMPIRTRACE_LIBRARIES})

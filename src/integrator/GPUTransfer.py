@@ -41,6 +41,14 @@ class GPUTransferLocal(ExtensionLocal, integrator_GPUTransfer):
         if not (pmi._PMIComm and pmi._PMIComm.isActive()) or pmi._MPIcomm.rank in pmi._PMIComm.getMPIcpugroup():
             self.cxxclass.printTimers(self)
 
+    def enableSorting(self):
+        if not (pmi._PMIComm and pmi._PMIComm.isActive()) or pmi._MPIcomm.rank in pmi._PMIComm.getMPIcpugroup():
+            self.cxxclass.enableSorting(self)
+
+    def disableSorting(self):
+        if not (pmi._PMIComm and pmi._PMIComm.isActive()) or pmi._MPIcomm.rank in pmi._PMIComm.getMPIcpugroup():
+            self.cxxclass.disableSorting(self)
+
     def __init__(self, system):
         if not (pmi._PMIComm and pmi._PMIComm.isActive()) or pmi._MPIcomm.rank in pmi._PMIComm.getMPIcpugroup():
           cxxinit(self, integrator_GPUTransfer, system)
@@ -53,5 +61,5 @@ if pmi.isController :
         __metaclass__ = pmi.Proxy
         pmiproxydefs = dict(
             cls =  'espressopp.integrator.GPUTransferLocal',
-            pmicall = [ 'printTimers ']
+            pmicall = [ 'printTimers ', 'enableSorting', 'disableSorting']
             )

@@ -101,26 +101,21 @@ __global__ void
       realG3 p_force = make_realG3(0.0,0.0,0.0);
       realG p_energy = 0;
       int n_nb = num_nb[idx];
-      //#pragma unroll
 
       for(int i = 0; i < n_nb; ++i){
         int p2_idx = vl[i * nPart + idx];
 
-        int potIdx = p_type * numPots + *(type+p2_idx);
-        realG3 p2_pos = pos[p2_idx];
         realG3 p_dist;
-        p_dist.x = p_pos.x - p2_pos.x;
-        p_dist.y = p_pos.y - p2_pos.y;
-        p_dist.z = p_pos.z - p2_pos.z;
-        realG distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
+        realG3 p2_pos = pos[p2_idx];
+        int potIdx = p_type * numPots + type[p2_idx];
+        p_dist = p_pos - p2_pos;
+        realG distSqr = dot(p_dist, p_dist);
         if(distSqr <= (s_cutoff[potIdx] * s_cutoff[potIdx])){
           if(mode == 0){
             realG frac2 = 1.0 / distSqr;
             realG frac6 = frac2 * frac2 * frac2;
             realG calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
-            p_force.x += p_dist.x * calcResult;
-            p_force.y += p_dist.y * calcResult;
-            p_force.z += p_dist.z * calcResult;
+            p_force += p_dist * calcResult;
           }
           if(mode == 1){
             realG frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;
@@ -221,10 +216,9 @@ __global__ void
             // p_dist.x = s_pos1[idx].x - s_pos2[idx].x;
             // p_dist.y = s_pos1[idx].y - s_pos2[idx].y;
             // p_dist.z = s_pos1[idx].z - s_pos2[idx].z;            
-            p_dist.x = p_pos.x - p2_pos.x;
-            p_dist.y = p_pos.y - p2_pos.y;
-            p_dist.z = p_pos.z - p2_pos.z;
-            realG distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
+            p_dist = p_pos - p2_pos;
+            realG distSqr = dot(p_dist, p_dist);
+            // p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
             if(distSqr <= (s_cutoff[potIdx] * s_cutoff[potIdx])){
             // if(distSqr <= (gpuPots[potIdx].cutoff * gpuPots[potIdx].cutoff)){
               if(mode == 0){
@@ -232,12 +226,8 @@ __global__ void
                 realG frac6 = frac2 * frac2 * frac2;
                 realG calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
                 // realG calcResult = frac6 * (gpuPots[potIdx].ff1 * frac6 - gpuPots[potIdx].ff2) * frac2;
-                p_force.x += p_dist.x * calcResult;
-                p_force.y += p_dist.y * calcResult;
-                p_force.z += p_dist.z * calcResult;
-                // s_force[threadIdx.x].x += p_dist.x * calcResult;
-                // s_force[threadIdx.x].y += p_dist.y * calcResult;
-                // s_force[threadIdx.x].z += p_dist.z * calcResult;
+                p_force += p_dist * calcResult;
+                // s_force[threadIdx.x] += p_dist * calcResult;
               }
               if(mode == 1){
                 realG frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;
@@ -471,8 +461,6 @@ __global__ void
       __shared__ int numberLineParticles[9];
       __shared__ int numberLineWarps[9];
 
-      int potI;
-      bool sameId;
       int calcCellOffset = cellOffsets[blockIdx.x];
 
       if(cellParticles[blockIdx.x] == 0){
@@ -482,15 +470,6 @@ __global__ void
         return;
       }
 
-      realG3 p_dist;
-      realG3 p_force;
-      realG distSqr;
-      realG t_pos_x;
-      realG t_pos_y;
-      realG t_pos_z;      
-      int t_type;
-      int t_id;
-      realG p_energy = 0;
 
       int warpId = threadIdx.x / warpSize;
       int laneId = threadIdx.x % warpSize;
@@ -506,51 +485,37 @@ __global__ void
       __syncthreads();
 
       for(int i = 0; i < numberLineWarps[warpId]; ++i){
-        t_pos_x = 0.0f;
-        t_pos_y = 0.0f;
-        t_pos_z = 0.0f;
-        p_energy = 0.0f;
-        p_force.x = 0.0f;
-        p_force.y = 0.0f;
-        p_force.z = 0.0f;
-        // if(threadIdx.x == 0){
-        //   printf("Mode: %d, This is blockIdx: %d\n", mode, blockIdx.x);
-        // }
         unsigned mask = __ballot_sync(0xffffffff, i * warpSize + laneId < numberLineParticles[warpId]);
         if(i * warpSize + laneId < numberLineParticles[warpId]){
-          t_pos_x = pos[dataOffset + i * warpSize + laneId].x;
-          t_pos_y = pos[dataOffset + i * warpSize + laneId].y;
-          t_pos_z = pos[dataOffset + i * warpSize + laneId].z;
-          t_type = type[dataOffset + i * warpSize + laneId];
-          t_id = id[dataOffset + i * warpSize + laneId];
+          realG3 t_pos = pos[dataOffset + i * warpSize + laneId];
+          int t_type = type[dataOffset + i * warpSize + laneId];
+          int t_id = id[dataOffset + i * warpSize + laneId];
           for(int j = 0; j < cellParticles[blockIdx.x]; ++j){
+            realG3 p_force;
+            realG p_energy;
             p_energy = 0.0f;
             p_force.x = 0.0f;
             p_force.y = 0.0f;
             p_force.z = 0.0f;
-            potI = t_type * numPots + type[calcCellOffset + j];
-            sameId = t_id == id[calcCellOffset + j] ? true : false;
+            int potI = t_type * numPots + type[calcCellOffset + j];
+            bool sameId = t_id == id[calcCellOffset + j] ? true : false;
 
-            p_dist.x = pos[calcCellOffset + j].x - t_pos_x;
-            p_dist.y = pos[calcCellOffset + j].y - t_pos_y;
-            p_dist.z = pos[calcCellOffset + j].z - t_pos_z;
+            realG3 p_dist;
+            p_dist = pos[calcCellOffset + j] - t_pos;
 
-            distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
+            realG distSqr =  dot(p_dist, p_dist);
             if(distSqr <= (gpuPots[potI].cutoff * gpuPots[potI].cutoff)){
               if(!sameId){
                 if(mode == 0){
                   realG frac2 = 1.0 / distSqr;
                   realG frac6 = frac2 * frac2 * frac2;
                   realG ffactor = frac6 * (gpuPots[potI].ff1 * frac6 - gpuPots[potI].ff2) * frac2;
-                  p_force.x = p_dist.x * ffactor;
-                  p_force.y = p_dist.y * ffactor;
-                  p_force.z = p_dist.z * ffactor;
+                  p_force = p_dist * ffactor;
                 }
                 if(mode == 1){
                   realG frac2 = gpuPots[potI].sigma * gpuPots[potI].sigma / distSqr;
                   realG frac6 = frac2 * frac2 * frac2;
-                  realG energy = 4.0 * gpuPots[potI].epsilon * (frac6 * frac6 - frac6);
-                  p_energy = energy;
+                  p_energy = 4.0 * gpuPots[potI].epsilon * (frac6 * frac6 - frac6);
                 }
               }
             }
@@ -571,6 +536,7 @@ __global__ void
                   atomicAdd(&energy[calcCellOffset + j], p_energy);
               }
             }
+            __syncwarp();
           }
         }
       }
@@ -640,9 +606,9 @@ __global__ void
     cudaEventCreate(&start); CUERR
     cudaEventCreate(&stop); CUERR
     cudaEventRecord(start); CUERR
-    // testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
+    testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
       //  testKernel2<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
-      testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
+      // testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
                             gpuStorage->numberLocalParticles, 
                             gpuStorage->numberLocalCells, 
                             gpuStorage->d_id,

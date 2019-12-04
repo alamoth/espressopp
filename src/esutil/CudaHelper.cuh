@@ -77,3 +77,133 @@ using namespace std;
   } \
 }
 #endif
+#ifndef CUTIL_MATH_H
+#define CUTIL_MATH_H
+
+inline __host__ __device__ double3 operator+(double3 a, double3 b)
+{
+    return make_double3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+inline __host__ __device__ void operator+=(double3 &a, double3 b)
+{
+    a.x += b.x; a.y += b.y; a.z += b.z;
+}
+inline __host__ __device__ double3 operator+(double3 a, float b)
+{
+    return make_double3(a.x + b, a.y + b, a.z + b);
+}
+inline __host__ __device__ void operator+=(double3 &a, float b)
+{
+    a.x += b; a.y += b; a.z += b;
+}
+
+inline __host__ __device__ double4 operator+(double4 a, double4 b)
+{
+    return make_double4(a.x + b.x, a.y + b.y, a.z + b.z,  a.w + b.w);
+}
+inline __host__ __device__ void operator+=(double4 &a, double4 b)
+{
+    a.x += b.x; a.y += b.y; a.z += b.z; a.w += b.w;
+}
+inline __host__ __device__ double4 operator+(double4 a, float b)
+{
+    return make_double4(a.x + b, a.y + b, a.z + b, a.w + b);
+}
+inline __host__ __device__ double4 operator+(float b, double4 a)
+{
+    return make_double4(a.x + b, a.y + b, a.z + b, a.w + b);
+}
+inline __host__ __device__ void operator+=(double4 &a, float b)
+{
+    a.x += b; a.y += b; a.z += b; a.w += b;
+}
+
+inline __host__ __device__ double4 operator-(double4 a, double4 b)
+{
+    return make_double4(a.x - b.x, a.y - b.y, a.z - b.z,  a.w - b.w);
+}
+inline __host__ __device__ void operator-=(double4 &a, double4 b)
+{
+    a.x -= b.x; a.y -= b.y; a.z -= b.z; a.w -= b.w;
+}
+inline __host__ __device__ double4 operator-(double4 a, float b)
+{
+    return make_double4(a.x - b, a.y - b, a.z - b,  a.w - b);
+}
+inline __host__ __device__ void operator-=(double4 &a, float b)
+{
+    a.x -= b; a.y -= b; a.z -= b; a.w -= b;
+}
+
+inline __host__ __device__ double3 operator-(double3 a, double3 b)
+{
+    return make_double3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+inline __host__ __device__ void operator-=(double3 &a, double3 b)
+{
+    a.x -= b.x; a.y -= b.y; a.z -= b.z;
+}
+inline __host__ __device__ double3 operator-(double3 a, float b)
+{
+    return make_double3(a.x - b, a.y - b, a.z - b);
+}
+inline __host__ __device__ double3 operator-(float b, double3 a)
+{
+    return make_double3(b - a.x, b - a.y, b - a.z);
+}
+inline __host__ __device__ void operator-=(double3 &a, float b)
+{
+    a.x -= b; a.y -= b; a.z -= b;
+}
+
+inline __host__ __device__ double3 operator*(double3 a, double3 b)
+{
+    return make_double3(a.x * b.x, a.y * b.y, a.z * b.z);
+}
+inline __host__ __device__ void operator*=(double3 &a, double3 b)
+{
+    a.x *= b.x; a.y *= b.y; a.z *= b.z;
+}
+inline __host__ __device__ double3 operator*(double3 a, float b)
+{
+    return make_double3(a.x * b, a.y * b, a.z * b);
+}
+inline __host__ __device__ double3 operator*(float b, double3 a)
+{
+    return make_double3(b * a.x, b * a.y, b * a.z);
+}
+inline __host__ __device__ void operator*=(double3 &a, float b)
+{
+    a.x *= b; a.y *= b; a.z *= b;
+}
+
+inline __host__ __device__ double4 operator*(double4 a, double4 b)
+{
+    return make_double4(a.x * b.x, a.y * b.y, a.z * b.z,  a.w * b.w);
+}
+inline __host__ __device__ void operator*=(double4 &a, double4 b)
+{
+    a.x *= b.x; a.y *= b.y; a.z *= b.z; a.w *= b.w;
+}
+inline __host__ __device__ double4 operator*(double4 a, float b)
+{
+    return make_double4(a.x * b, a.y * b, a.z * b,  a.w * b);
+}
+inline __host__ __device__ double4 operator*(float b, double4 a)
+{
+    return make_double4(b * a.x, b * a.y, b * a.z, b * a.w);
+}
+inline __host__ __device__ void operator*=(double4 &a, float b)
+{
+    a.x *= b; a.y *= b; a.z *= b; a.w *= b;
+}
+
+inline __host__ __device__ float dot(double3 a, double3 b)
+{ 
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+inline __host__ __device__ float dot(double4 a, double4 b)
+{ 
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+#endif

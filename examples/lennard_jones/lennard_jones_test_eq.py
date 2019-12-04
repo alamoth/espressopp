@@ -19,7 +19,7 @@ r_cutoff           = 2.5
 # VerletList skin size (also used for domain decomposition)
 skin               = 0.4
 # the temperature of the system
-temperature        = None
+temperature        = 1.0
 # time step for the velocity verlet integrator
 dt                 = 0.005
 # Lennard Jones epsilon during equilibration phase
@@ -29,7 +29,7 @@ sigma              = 1.0
 # number of equilibration loops
 equil_nloops       = 1 #10 #1 #20 #10
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 100 # 100
+equil_isteps       = 1000 # 100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -182,8 +182,8 @@ sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
 # first line      : number of particles
 # second line     : box_Lx, box_Ly, box_Lz
 # all other lines : ParticleID  ParticleType  x_pos  y_pos  z_pos  x_vel  y_vel  z_vel 
-filename = "lennard_jones_fluid_C_%f.xyz" % time.clock()
-print "writing final configuration file ..." 
-espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
+# filename = "lennard_jones_fluid_C_%f.xyz" % time.clock()
+# print "writing final configuration file ..." 
+# espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
 
 print "finished."

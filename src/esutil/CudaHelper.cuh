@@ -1,8 +1,8 @@
 #define realG double
-#define realG3 double4
-#define realG4 double4 
-#define make_realG3 make_double4
-#define make_realG4 make_double4
+#define realG3 double3
+#define realG4 double3
+#define make_realG3 make_double3
+#define make_realG4 make_double3
 #ifdef __NVCC__
 
 #define SDIV(x,y)(((x)+(y)-1)/(y))
@@ -56,7 +56,7 @@ realG3 blockReduceSumTriple(realG3 val, unsigned mask) {
   __syncthreads();              // Wait for all partial reductions
 
   //read from shared memory only if that warp existed
-  val = (threadIdx.x < blockDim.x / warpSize) ? shared[lane] : make_realG3(0.0,0.0,0.0,0.0);
+  val = (threadIdx.x < blockDim.x / warpSize) ? shared[lane] : make_realG3(0.0,0.0,0.0);
 
   if (wid==0) val = warpReduceSumTriple(val, mask); //Final reduce within first warp
 

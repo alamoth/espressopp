@@ -29,7 +29,7 @@ sigma              = 1.0
 # number of equilibration loops
 equil_nloops       = 1 #10 #10 #20
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 10000 #100 #100
+equil_isteps       = 10 #100 #100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -127,11 +127,15 @@ system.storage.decompose()
 
 # verletlist = espressopp.VerletListGPU(system, r_cutoff)
 # interaction = espressopp.interaction.VerletListLennadJonesGPU(system.storage, verletlist)
+# print "--------------------------------------------"
+# print "Using VerletListLennardJonesGPU potential"
+# print "--------------------------------------------"
 
 verletlist = None
 interaction = espressopp.interaction.CellListLennardJonesGPU(system.storage)
-
-# GPUSupport.enableSorting()
+print "--------------------------------------------"
+print "Using CellListLennardJonesGPU potential"
+print "--------------------------------------------"
 
 potential = interaction.setPotential(type1=0, type2=0, potential=espressopp.interaction.LennardJonesGPU(epsilon=epsilon, sigma=sigma, cutoff=r_cutoff, shift=0.0))
 
@@ -164,11 +168,11 @@ print "equilibration finished"
 
 end_time = time.clock()
 GPUSupport.printTimers()
-espressopp.tools.analyse.final_info(system, integrator, verletlist, start_time, end_time)
+# espressopp.tools.analyse.final_info(system, integrator, verletlist, start_time, end_time)
 sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
 
-if(verletlist != None):
-  sys.stdout.write('GPU rebuild time= %f\n' % verletlist.getGPUtimer())
+# if(verletlist != None):
+  # sys.stdout.write('GPU rebuild time= %f\n' % verletlist.getGPUtimer())
 
 ########################################################################
 # 9. writing configuration to file                                     #
@@ -179,7 +183,7 @@ if(verletlist != None):
 # first line      : number of particles
 # second line     : box_Lx, box_Ly, box_Lz
 # all other lines : ParticleID  ParticleType  x_pos  y_pos  z_pos  x_vel  y_vel  z_vel 
-filename = "lennard_jones_fluid_G_%f.xyz" % time.clock()
+# filename = "lennard_jones_fluid_G_%f.xyz" % time.clock()
 # print "writing final configuration file ..." 
 # espressopp.tools.writexyz(filename, system, velocities = True, unfolded = False)
 

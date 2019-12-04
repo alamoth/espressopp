@@ -29,7 +29,6 @@
 #include <math.h>
 #include <assert.h>
 #define THREADSPERBLOCK 1024
-#define USELDG TRUE
 //#ifdef __NVCC__
 
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
@@ -52,12 +51,8 @@ __device__ double atomicAdd(double* address, double val)
 template<typename T>
 __device__ __forceinline__ T ldg(const T* ptr) {
 return *ptr;
-// #if USELDG == TRUE
-//     return __ldg(ptr);
-// #else
-//     return *ptr;
-// #endif
 }
+
 
 namespace espressopp {
   namespace interaction {
@@ -100,44 +95,37 @@ __global__ void
       if (!real[idx]) return;
 
       realG3 p_pos = pos[idx];
-      realG3 p2_pos;
-      int p_type = ldg(type+idx);
+      int p_type = type[idx];
       //realG p_mass = mass[idx];
       //realG p_drift = drift[idx];
-      realG3 p_force = make_realG3(0.0,0.0,0.0,0.0);
-      realG3 p_dist;
-      realG distSqr = 0;
+      realG3 p_force = make_realG3(0.0,0.0,0.0);
       realG p_energy = 0;
-      realG frac2;
-      realG frac6;
-      realG calcResult;
-      int n_nb = ldg(num_nb+idx);
-      int potIdx;
+      int n_nb = num_nb[idx];
       //#pragma unroll
 
       for(int i = 0; i < n_nb; ++i){
-        int p2_idx = ldg(vl+(i * nPart + idx));
+        int p2_idx = vl[i * nPart + idx];
 
-        potIdx = p_type * numPots + ldg(type+p2_idx);
-        p2_pos = pos[p2_idx];
-
+        int potIdx = p_type * numPots + *(type+p2_idx);
+        realG3 p2_pos = pos[p2_idx];
+        realG3 p_dist;
         p_dist.x = p_pos.x - p2_pos.x;
         p_dist.y = p_pos.y - p2_pos.y;
         p_dist.z = p_pos.z - p2_pos.z;
-        distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
+        realG distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
         if(distSqr <= (s_cutoff[potIdx] * s_cutoff[potIdx])){
           if(mode == 0){
-            frac2 = 1.0 / distSqr;
-            frac6 = frac2 * frac2 * frac2;
-            calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
+            realG frac2 = 1.0 / distSqr;
+            realG frac6 = frac2 * frac2 * frac2;
+            realG calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
             p_force.x += p_dist.x * calcResult;
             p_force.y += p_dist.y * calcResult;
             p_force.z += p_dist.z * calcResult;
           }
           if(mode == 1){
-            frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;
-            frac6 = frac2 * frac2 * frac2;
-            calcResult = 4.0 * s_epsilon[potIdx] * (frac6 * frac6 - frac6);
+            realG frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;
+            realG frac6 = frac2 * frac2 * frac2;
+            realG calcResult = 4.0 * s_epsilon[potIdx] * (frac6 * frac6 - frac6);
             p_energy += calcResult;
           }
         }
@@ -205,23 +193,24 @@ __global__ void
       // s_pos1[threadIdx.x] = pos[idx];
       //realG p_mass = mass[idx];
       //realG p_drift = drift[idx];
-      int p_type = ldg(type+idx);
+      int p_type = type[idx];
       // s_type[threadIdx.x] = ldg(type+idx);
       int p_cellId = cellId[idx];
       // s_cellId[threadIdx.x] = ldg(cellId+idx);
-      realG3 p_force = make_realG3(0.0,0.0,0.0,0.0);
-      // s_force[threadIdx.x] =  make_realG3(0.0,0.0,0.0,0.0);
+      realG3 p_force = make_realG3(0.0,0.0,0.0);
+      // s_force[threadIdx.x] =  make_realG3(0.0,0.0,0.0);
       realG p_energy = 0;
       // s_energy[threadIdx.x] = 0;
-      //#pragma unroll
+      // #pragma unroll
       for(int i = 0; i < 27; ++i){
-        int currentCellId = ldg(cellNeighbors+(p_cellId * 27 + i));
+        int currentCellId = *(cellNeighbors+(p_cellId * 27 + i));
         // int currentCellId = ldg(cellNeighbors+(s_cellId[threadIdx.x] * 27 + i));
-        int sizeCell = ldg(cellParticlesN+currentCellId);
+        int sizeCell = *(cellParticlesN+currentCellId);
+        int cellOffset = *(cellOffsets+currentCellId);
         for(int j = 0; j < sizeCell; ++j){
-          int pOffset = ldg(cellOffsets+currentCellId) + j;
+          int pOffset = cellOffset + j;
           if(pOffset != idx){
-            int potIdx = p_type * numPots + ldg(type+pOffset);
+            int potIdx = p_type * numPots + *(type+pOffset);
             // int potIdx = s_type[threadIdx.x] * numPots + ldg(type+pOffset);
             realG3 p2_pos = pos[pOffset];
             // s_pos2[idx] = pos[pOffset];
@@ -261,7 +250,9 @@ __global__ void
               }
             }
           }
+          // __syncwarp();
         }
+        // __syncwarp();
       }
       if(mode == 0){
         force[idx] = p_force;
@@ -616,9 +607,9 @@ __global__ void
       vl,
       n_nb
     );
-    cudaEventRecord(stop); CUERR
 
     cudaDeviceSynchronize(); CUERR
+    cudaEventRecord(stop); CUERR
     cudaEventSynchronize(stop); CUERR
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop); CUERR
@@ -649,10 +640,9 @@ __global__ void
     cudaEventCreate(&start); CUERR
     cudaEventCreate(&stop); CUERR
     cudaEventRecord(start); CUERR
-    // testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK>>>(
-    testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
+    // testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
       //  testKernel2<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
-      // testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
+      testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
                             gpuStorage->numberLocalParticles, 
                             gpuStorage->numberLocalCells, 
                             gpuStorage->d_id,
@@ -672,9 +662,9 @@ __global__ void
                             mode
                           );
     
-    cudaEventRecord(stop); CUERR
 
     cudaDeviceSynchronize(); CUERR
+    cudaEventRecord(stop); CUERR
     cudaEventSynchronize(stop); CUERR
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop); CUERR

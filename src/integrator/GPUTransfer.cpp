@@ -89,21 +89,32 @@ namespace espressopp {
       int dev_cnt = 0;
       err = cudaGetDeviceCount( &dev_cnt );
       assert( err == cudaSuccess || err == cudaErrorNoDevice );
-      printf( "rank %d, mpi size: %d, cnt %d\n", rank, size, dev_cnt );
+      // // printf( "rank %d, mpi size: %d, cnt %d\n", rank, size, dev_cnt );
       
       cudaDeviceProp prop;
-      for (int dev = 0; dev < dev_cnt; ++dev) {
-          err = cudaGetDeviceProperties( &prop, dev );
-          assert( err == cudaSuccess );
-          printf( "rank %d, dev %d, prop %s, pci %d, %d, %d\n",
-                  rank, dev,
-                  prop.name,
-                  prop.pciBusID,
-                  prop.pciDeviceID,
-                  prop.pciDomainID );
+      int device;
+      cudaGetDevice(&device);
+      err = cudaGetDeviceProperties( &prop, device );
+      assert( err == cudaSuccess );
+      printf( "rank %d, device %d, prop %s, pci %d, %d, %d\n",
+              rank,
+              device,
+              prop.name,
+              prop.pciBusID,
+              prop.pciDeviceID,
+              prop.pciDomainID );
+      // for (int dev = 0; dev < dev_cnt; ++dev) {
+      //     err = cudaGetDeviceProperties( &prop, dev );
+      //     assert( err == cudaSuccess );
+      //     printf( "rank %d, dev %d, prop %s, pci %d, %d, %d\n",
+      //             rank, dev,
+      //             prop.name,
+      //             prop.pciBusID,
+      //             prop.pciDeviceID,
+      //             prop.pciDomainID );
           // printf("unique id: %.*s\n", (int)sizeof(prop.uuid), prop.uuid);
-      }
-      cudaSetDevice(6);
+      // }
+      // cudaSetDevice(6);
 
     }
 
@@ -296,7 +307,7 @@ namespace espressopp {
 
         for(unsigned int j = 0; j < localCells[i]->particles.size(); ++j){
           Real3D pos = localCells[i]->particles[j].getPos();
-          GPUStorage->h_pos[counterParticles] = make_realG3(pos.at(0), pos.at(1), pos.at(2), 0.0);
+          GPUStorage->h_pos[counterParticles] = make_realG3(pos.at(0), pos.at(1), pos.at(2));
           counterParticles++;
         }
       }

@@ -105,7 +105,7 @@ namespace espressopp {
   {
     time = timeIntegrate.getElapsedTime();
 
-    int n_c_nb = 27; // no support for half cells
+    int n_c_nb = 27; //idk // no support for half cells
 
     cutVerlet = cut + getSystem() -> getSkin();
     System& system = getSystemRef();

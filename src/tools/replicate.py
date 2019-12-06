@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #  Copyright (C) 2012,2013,2016
 #      Max Planck Institute for Polymer Research
 #  Copyright (C) 2008,2009,2010,2011
@@ -17,7 +18,37 @@
 #  
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+import espressopp
 
+
+def replicate_dry_run(x, y, z, Lx, Ly, Lz, xdim=1, ydim=1, zdim=1):
+
+    # if(len(x)!=len(y) or len(y)!=len(z)):
+        # raise ValueError("Mismatch in number of coordinates x,y,z”)
+
+    # expected number of particles
+    Npart = len(x)*xdim*ydim*zdim
+
+    # modify the box size
+    Lx = xdim * Lx
+    Ly = ydim * Ly
+    Lz = zdim * Lz
+
+    return Npart,Lx,Ly,Lz
+
+
+def replicate_add_particles(storage, x, y, z, Lx, Ly, Lz, xdim=1, ydim=1, zdim=1):
+    # default properties (mass=1.0, velocity=(0,0,0), charge=0.0)
+    ptype = 0
+    pid = 0
+
+    for i in xrange(xdim):
+      for j in xrange(ydim):
+        for k in xrange(zdim):
+          for x_, y_, z_ in zip(x, y, z):
+            storage.addParticle(pid, espressopp.Real3D((x_ + i * Lx),(y_ + j * Ly),(z_ + k * Lz))) 
+            pid += 1
+                
 
 def replicate (bonds, angles, x, y, z, Lx, Ly, Lz, xdim=1, ydim=1, zdim=1):
   """

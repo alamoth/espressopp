@@ -553,10 +553,10 @@ __global__ void
     unsigned shared_mem_size = ptypes * ptypes * sizeof(realG) * 5;
     cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles); CUERR
 
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start); CUERR
-    cudaEventCreate(&stop); CUERR
-    cudaEventRecord(start); CUERR
+    // cudaEvent_t start, stop;
+    // cudaEventCreate(&start); CUERR
+    // cudaEventCreate(&stop); CUERR
+    // cudaEventRecord(start); CUERR
 
     verletListKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
       gpuStorage->numberLocalParticles, 
@@ -574,19 +574,19 @@ __global__ void
       n_nb
     );
 
-    cudaDeviceSynchronize(); CUERR
-    cudaEventRecord(stop); CUERR
-    cudaEventSynchronize(stop); CUERR
-    float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop); CUERR
-    printf("%s kernel time: %2.6f\n", mode==0? "Force" : "Energy", milliseconds);
+    // cudaDeviceSynchronize(); CUERR
+    // cudaEventRecord(stop); CUERR
+    // cudaEventSynchronize(stop); CUERR
+    // float milliseconds = 0;
+    // cudaEventElapsedTime(&milliseconds, start, stop); CUERR
+    // printf("%s kernel time: %2.6f\n", mode==0? "Force" : "Energy", milliseconds);
       if(mode == 1) {
         cudaMemcpy(h_energy, d_energy, sizeof(realG) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost); CUERR
         for (int i = 0; i < gpuStorage->numberLocalParticles; ++i){ 
           totalEnergy += h_energy[i];
         }
       }
-
+      cudaFree(d_energy);
       return totalEnergy / (double)2.0;
 
   }
@@ -602,10 +602,10 @@ __global__ void
     unsigned shared_mem_size = ptypes * sizeof(realG) * 5;
     cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles); CUERR
 
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start); CUERR
-    cudaEventCreate(&stop); CUERR
-    cudaEventRecord(start); CUERR
+    // cudaEvent_t start, stop;
+    // cudaEventCreate(&start); CUERR
+    // cudaEventCreate(&stop); CUERR
+    // cudaEventRecord(start); CUERR
     testKernel<<<SDIV(gpuStorage->numberLocalParticles, THREADSPERBLOCK), THREADSPERBLOCK, shared_mem_size>>>(
       //  testKernel2<<<gpuStorage->numberLocalCells, THREADSPERBLOCK>>>(
       // testKernel3<<<gpuStorage->numberLocalCells, 288>>>(
@@ -629,12 +629,12 @@ __global__ void
                           );
     
 
-    cudaDeviceSynchronize(); CUERR
-    cudaEventRecord(stop); CUERR
-    cudaEventSynchronize(stop); CUERR
-    float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop); CUERR
-    printf("%s kernel time: %2.6f\n", mode==0? "Force" : "Energy", milliseconds);
+    // cudaDeviceSynchronize(); CUERR
+    // cudaEventRecord(stop); CUERR
+    // cudaEventSynchronize(stop); CUERR
+    // float milliseconds = 0;
+    // cudaEventElapsedTime(&milliseconds, start, stop); CUERR
+    // printf("%s kernel time: %2.6f\n", mode==0? "Force" : "Energy", milliseconds);
       if(mode == 1) {
         cudaMemcpy(h_energy, d_energy, sizeof(realG) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost); CUERR
         for (int i = 0; i < gpuStorage->numberLocalParticles; ++i){ 

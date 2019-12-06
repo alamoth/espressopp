@@ -13,7 +13,8 @@ rho                = 0.8442
 # length of simulation box
 L                  = pow(Npart/rho, 1.0/3.0)
 # cubic simulation box of size L
-box                = (L, L, L)
+mult               = (1,1,1)
+box                = (mult[0]*L, mult[1]*L, mult[2]*L)
 # cutoff of the short range potential
 r_cutoff           = 2.5
 # VerletList skin size (also used for domain decomposition)
@@ -29,7 +30,7 @@ sigma              = 1.0
 # number of equilibration loops
 equil_nloops       = 1 #10 #10 #20
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 10 #100 #100
+equil_isteps       = 1000 #100 #100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -106,20 +107,31 @@ integrator.addExtension(GPUSupport)
 # f = open('32768Eq')
 f = open(str(Npart)+'Eq')
 lines = f.readlines()
-print "adding ", Npart, " particles to the system ..." 
+pos_x = []
+pos_y = []
+pos_z = []
+
+print "adding ", Npart*mult[0]*mult[1]*mult[2], " particles to the system ..." 
 for pid in range(Npart):
   # get a 3D random coordinate within the box
   row = lines[pid].split()
   #pos = system.bc.getRandomPos()
-  pos =  espressopp.Real3D(float(row[2]), float(row[3]), float(row[4]))
+  pos_x.append(float(row[2]))
+  pos_y.append(float(row[3]))
+  pos_z.append(float(row[4]))
+  
+  # pos =  espressopp.Real3D(float(row[2]), float(row[3]), float(row[4]))
 
   # add a particle with particle id pid and coordinate pos to the system
   # coordinates are automatically folded according to periodic boundary conditions
   # the following default values are set for each particle:
   # (type=0, mass=1.0, velocity=(0,0,0), charge=0.0)
-  system.storage.addParticle(pid, pos)
+  # system.storage.addParticle(pid, pos)
+
+espressopp.tools.replicate_add_particles(system.storage, pos_x, pos_y, pos_z, L, L, L, mult[0], mult[1], mult[2])
 # distribute the particles to parallel CPUs 
 system.storage.decompose()
+
 
 ########################################################################
 # 7. setting up interaction potential for the equilibration            #
@@ -168,7 +180,10 @@ print "equilibration finished"
 
 end_time = time.clock()
 GPUSupport.printTimers()
-# espressopp.tools.analyse.final_info(system, integrator, verletlist, start_time, end_time)
+GPUSupport.disconnect()
+# if(verletlist != None):
+  # print 'GPU rebuild timer: ' + str(verletlist.getGPUtimer())
+espressopp.tools.analyse.final_info(system, integrator, verletlist, start_time, end_time)
 sys.stdout.write('Eq time = %f\n' % (end_time - start_time))
 
 # if(verletlist != None):

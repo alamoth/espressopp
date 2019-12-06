@@ -105,7 +105,7 @@ namespace espressopp {
   {
     time = timeIntegrate.getElapsedTime();
 
-    int n_c_nb = 27; //idk // no support for half cells
+    int n_c_nb = 6; //idk // no support for half cells // i literally got no idea what to put there
 
     cutVerlet = cut + getSystem() -> getSkin();
     System& system = getSystemRef();
@@ -129,24 +129,19 @@ namespace espressopp {
     } else{
       sizeVl = oldSizeVl;
     }
-
+    
     // if(n_pt >= oldNpart){
     cudaFree(d_n_nb); CUERR
     my_delete(n_nb);
     n_nb = new int[n_pt];
     cudaMalloc((void**)&d_n_nb, sizeof(int) * n_pt); CUERR
-
-    // } else{
-
-    // }
-    
     cudaMemset(d_vlPairs, -1, sizeof(int) * sizeVl); CUERR
     cudaMemset(d_n_nb, -1, sizeof(int) * n_pt); CUERR 
 
     verletListBuildDriver(GS, n_pt, cutsq, d_vlPairs, d_n_nb, max_n_nb);
     builds++;
 
-    timeGPUrebuild += time = timeIntegrate.getElapsedTime(); - time;
+    timeGPUrebuild += timeIntegrate.getElapsedTime() - time;
   }
   
   int VerletListGPU::totalSize() const

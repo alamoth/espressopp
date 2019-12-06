@@ -12,6 +12,7 @@ class StorageGPU {
         
         int numberLocalParticles = 0;
         int numberLocalCells = 0;
+        int nPartAllocated = 0;
 
         int max_n_nb = 0;
 

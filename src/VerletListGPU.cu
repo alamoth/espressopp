@@ -25,7 +25,6 @@ VerletListBuild(  const int nPart,
   if (idx >= nPart) return;
   if (!real[idx]) return;
 
-  realG3 p_dist;
   realG3 p_pos1 = pos[idx];
   int p_num_nb = 0;
   int p_cellId = cellId[idx];
@@ -36,10 +35,8 @@ VerletListBuild(  const int nPart,
       int memIdx = cellOffsets[currentCellId] + j;
       if(memIdx != idx){
         realG3 p_pos2 = pos[memIdx];
-        p_dist.x = p_pos1.x - p_pos2.x;
-        p_dist.y = p_pos1.y - p_pos2.y;
-        p_dist.z = p_pos1.z - p_pos2.z;
-        realG distSqr =  p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
+        realG3 p_dist = p_pos1 - p_pos2;
+        realG distSqr =  dot(p_dist, p_dist);
         if(distSqr <= cutsq){
           assert(p_num_nb < max_n_nb);
           assert(memIdx >= 0);
@@ -70,7 +67,7 @@ void verletListBuildDriver(StorageGPU* GS, int n_pt, realG cutsq, int* d_vlPairs
         d_vlPairs,
         d_n_nb,
         max_n_nb);
-    //cudaDeviceSynchronize(); CUERR
+    // cudaDeviceSynchronize(); CUERR
   }
 }
 // #endif

@@ -123,7 +123,7 @@ namespace espressopp {
       _aftInitF.disconnect();
       _aftCalcF.disconnect();
       _runInit.disconnect();
-      GPUTransfer::printTimers();
+      cudaDeviceReset();
     }
 
     void GPUTransfer::connect(){
@@ -242,11 +242,17 @@ namespace espressopp {
       time = timeIntegrate.getElapsedTime();
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
-      GPUStorage->numberLocalParticles = system.storage->getNLocalParticles();
+      int nAllocated = GPUStorage->nPartAllocated;
+      int nLocalParticles = system.storage->getNLocalParticles();
+      GPUStorage->numberLocalParticles = nLocalParticles;
       timeResizeParticleData += timeIntegrate.getElapsedTime() - time;
 
+
       time = timeIntegrate.getElapsedTime();
-      GPUStorage->resizeParticleData();
+      if(nAllocated < nLocalParticles){
+        GPUStorage->resizeParticleData();
+        GPUStorage->nPartAllocated = nLocalParticles;
+      }
       timeGResizeParticleData += timeIntegrate.getElapsedTime() - time;
       
       cResizeParticleData++;
@@ -365,8 +371,8 @@ namespace espressopp {
       timeTotal = timeFillParticleVars + timeFillParticleStatics + timeFillCellData + timeGetParticleForces + timeResizeParticleData + timeResizeCellData + timeGResizeParticleData + timeGResizeCellData + timeGH2dParticleStatics + timeGH2dParticleVars + timeGH2dCellData + timeGD2hParticleForces;
       // +timeGPUinit;
 
-      printf("Time for GPU init:        %.3fs\n", timeGPUinit);
-      printf("Total GPUTransfer Time:   %.3fs\n", timeTotal);
+      printf("Time for GPU init:        %.3f s\n", timeGPUinit);
+      printf("Total GPUTransfer Time:   %.3f s\n", timeTotal);
       printf("timeFillParticleVars:     %.3f s, %.3f %%\n", timeFillParticleVars, 100 * timeFillParticleVars / timeTotal);
       printf("timeGH2dParticleVars:     %.3f s, %.3f %%\n", timeGH2dParticleVars, 100 * timeGH2dParticleVars / timeTotal);
 

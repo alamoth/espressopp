@@ -65,6 +65,8 @@ namespace espressopp {
     int* getNumNb() { return n_nb; }
 
     int* getNumNbGPU() { return d_n_nb; }
+
+    int getMaxNb() { return max_n_nb; }
     
     real getVerletCutoff(); // returns cutoff + skin
 

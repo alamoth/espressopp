@@ -585,23 +585,23 @@ __global__ void
         for (int i = 0; i < gpuStorage->numberLocalParticles; ++i){ 
           totalEnergy += h_energy[i];
         }
+        cudaFree(d_energy);
       }
-      cudaFree(d_energy);
       return totalEnergy / (double)2.0;
 
   }
 
   realG LJGPUdriver(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int ptypes, int mode){
+    realG totalEnergy = 0;
     realG *h_energy; 
     realG *d_energy;
-    realG totalEnergy = 0;
-
-    h_energy = new realG[gpuStorage->numberLocalParticles];
-    cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
-    cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
+    if(mode == 1) {      
+      h_energy = new realG[gpuStorage->numberLocalParticles];
+      cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
+      cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
+    }
+    // cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles); CUERR
     unsigned shared_mem_size = ptypes * sizeof(realG) * 5;
-    cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles); CUERR
-
     // cudaEvent_t start, stop;
     // cudaEventCreate(&start); CUERR
     // cudaEventCreate(&stop); CUERR
@@ -627,22 +627,21 @@ __global__ void
                             ptypes,
                             mode
                           );
-    
-
+  
     // cudaDeviceSynchronize(); CUERR
     // cudaEventRecord(stop); CUERR
     // cudaEventSynchronize(stop); CUERR
     // float milliseconds = 0;
     // cudaEventElapsedTime(&milliseconds, start, stop); CUERR
     // printf("%s kernel time: %2.6f\n", mode==0? "Force" : "Energy", milliseconds);
-      if(mode == 1) {
-        cudaMemcpy(h_energy, d_energy, sizeof(realG) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost); CUERR
-        for (int i = 0; i < gpuStorage->numberLocalParticles; ++i){ 
-          totalEnergy += h_energy[i];
-        }
+    if(mode == 1) {
+      cudaMemcpy(h_energy, d_energy, sizeof(realG) * gpuStorage->numberLocalParticles, cudaMemcpyDeviceToHost); CUERR
+      for (int i = 0; i < gpuStorage->numberLocalParticles; ++i){ 
+        totalEnergy += h_energy[i];
       }
       cudaFree(d_energy);
-      return totalEnergy / (double)2.0;
+    }
+    return totalEnergy / (double)2.0;
     }
   }
 }

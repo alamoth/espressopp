@@ -79,6 +79,7 @@ namespace espressopp {
       
       time = timeIntegrate.getElapsedTime();
       cudaMalloc(&d_init, 1);
+      cudaFree(d_init);
       timeGPUinit += time = timeIntegrate.getElapsedTime(); - time;
 
       int rank;

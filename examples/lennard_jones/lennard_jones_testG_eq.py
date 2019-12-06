@@ -137,17 +137,17 @@ system.storage.decompose()
 # 7. setting up interaction potential for the equilibration            #
 ########################################################################
 
-# verletlist = espressopp.VerletListGPU(system, r_cutoff)
-# interaction = espressopp.interaction.VerletListLennadJonesGPU(system.storage, verletlist)
-# print "--------------------------------------------"
-# print "Using VerletListLennardJonesGPU potential"
-# print "--------------------------------------------"
+verletlist = espressopp.VerletListGPU(system, r_cutoff)
+interaction = espressopp.interaction.VerletListLennadJonesGPU(system.storage, verletlist)
+print "--------------------------------------------"
+print "Using VerletListLennardJonesGPU potential"
+print "--------------------------------------------"
 
-verletlist = None
-interaction = espressopp.interaction.CellListLennardJonesGPU(system.storage)
-print "--------------------------------------------"
-print "Using CellListLennardJonesGPU potential"
-print "--------------------------------------------"
+# verletlist = None
+# interaction = espressopp.interaction.CellListLennardJonesGPU(system.storage)
+# print "--------------------------------------------"
+# print "Using CellListLennardJonesGPU potential"
+# print "--------------------------------------------"
 
 potential = interaction.setPotential(type1=0, type2=0, potential=espressopp.interaction.LennardJonesGPU(epsilon=epsilon, sigma=sigma, cutoff=r_cutoff, shift=0.0))
 

@@ -47,7 +47,8 @@ num_particles = len(x)
 density = num_particles / (Lx * Ly * Lz)
 box = (Lx, Ly, Lz)
 system, integrator = espressopp.standard_system.Default(box=box, rc=rc, skin=skin, dt=timestep, temperature=temperature)
-
+GPUSupport = espressopp.integrator.GPUTransfer(system)
+integrator.addExtension(GPUSupport)
 # add particles to the system and then decompose
 # do this in chunks of 1000 particles to speed it up
 props = ['id', 'type', 'mass', 'pos']
@@ -62,15 +63,16 @@ for i in range(num_particles):
 system.storage.addParticles(new_particles, *props)
 system.storage.decompose()
 # New
-GPUSupport = espressopp.integrator.GPUTransfer(system)
-integrator.addExtension(GPUSupport)
+
+vl      = espressopp.VerletListGPU(system, cutoff = rc)
+potLJ   = espressopp.interaction.LennardJonesGPU(epsilon=1.0, sigma=1.0, cutoff=rc, shift=0)
+interLJ = espressopp.interaction.VerletListLennadJonesGPU(system.storage, vl)
 
 # Lennard-Jones with Verlet list
-vl      = espressopp.VerletList(system, cutoff = rc)
-#potLJ   = espressopp.interaction.LennardJones(epsilon=1.0, sigma=1.0, cutoff=rc, shift=0)
-potLJ   = espressopp.interaction.LennardJonesGPU(epsilon=1.0, sigma=1.0, cutoff=rc, shift=0)
-interLJ = espressopp.interaction.CellListLennardJonesGPU(system.storage, vl)
-#interLJ = espressopp.interaction.VerletListLennardJones(vl)
+# vl      = espressopp.VerletList(system, cutoff = rc)
+# potLJ   = espressopp.interaction.LennardJones(epsilon=1.0, sigma=1.0, cutoff=rc, shift=0)
+# interLJ = espressopp.interaction.VerletListLennardJones(vl)
+
 interLJ.setPotential(type1=0, type2=0, potential=potLJ)
 system.addInteraction(interLJ)
 

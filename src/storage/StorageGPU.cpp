@@ -18,8 +18,8 @@
         h_cellId = new int[numberLocalParticles];
         h_id = new int[numberLocalParticles];
         h_type = new int[numberLocalParticles];
-        h_drift = new realG[numberLocalParticles];
-        h_mass = new realG[numberLocalParticles];
+        // h_drift = new realG[numberLocalParticles];
+        // h_mass = new realG[numberLocalParticles];
         h_real = new bool[numberLocalParticles];
 
         h_pos = new realG3[numberLocalParticles];

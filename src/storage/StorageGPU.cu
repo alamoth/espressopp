@@ -95,8 +95,8 @@ void gpu_h2dParticleStatics(    int nLocalParticles,
     cudaMemcpy(*d_cellId,  h_cellId,  nLocalParticles * sizeof(int),cudaMemcpyHostToDevice);                          CUERR
     cudaMemcpy(*d_type,  h_type,  nLocalParticles * sizeof(int),    cudaMemcpyHostToDevice);                          CUERR
     cudaMemcpy(*d_id,  h_id,  nLocalParticles * sizeof(int),    cudaMemcpyHostToDevice);                              CUERR
-    cudaMemcpy(*d_drift, h_drift, nLocalParticles * sizeof(realG), cudaMemcpyHostToDevice);                          CUERR
-    cudaMemcpy(*d_mass,  h_mass,  nLocalParticles * sizeof(realG), cudaMemcpyHostToDevice);                          CUERR
+    // cudaMemcpy(*d_drift, h_drift, nLocalParticles * sizeof(realG), cudaMemcpyHostToDevice);                          CUERR
+    // cudaMemcpy(*d_mass,  h_mass,  nLocalParticles * sizeof(realG), cudaMemcpyHostToDevice);                          CUERR
     cudaMemcpy(*d_real,  h_real,  nLocalParticles * sizeof(bool), cudaMemcpyHostToDevice);                            CUERR
     cudaMemcpy(*d_cellOffsets, h_cellOffsets, nLocalCells * sizeof(int), cudaMemcpyHostToDevice);                       CUERR
     cudaMemcpy(*d_particlesCell, h_particlesCell, nLocalCells * sizeof(int), cudaMemcpyHostToDevice);                   CUERR

@@ -132,8 +132,9 @@ namespace espressopp {
       _onParticlesChanged   =   system.storage->gpuParticlesChanged.connect( boost::bind(&GPUTransfer::onDecompose, this));
       // _onParticlesChanged   =   integrator->gpuAftDec.connect( boost::bind(&GPUTransfer::onDecompose, this));
       _aftInitF             =   integrator->gpuBefF.connect( boost::bind(&GPUTransfer::fillParticleVars, this));
-  	  _aftCalcF             =   integrator->gpuAftF.connect( boost::bind(&GPUTransfer::getParticleForces, this));
-      //_runInit              =   integrator->runInit.connect ( boost::bind(&GPUTransfer::onRunInit, this)); 
+  	  // _aftCalcF             =   integrator->gpuAftF.connect( boost::bind(&GPUTransfer::getParticleForces, this));
+  	  _aftCalcF             =   integrator->aftCalcF.connect( boost::bind(&GPUTransfer::getParticleForces, this));
+      // _runInit              =   integrator->runInit.connect ( boost::bind(&GPUTransfer::onRunInit, this)); 
       _aftCellAdjust        =   system.storage->aftCellAdjust.connect ( boost::bind(&GPUTransfer::onGridInit, this));
       // _aftGridInit        =   system.storage->aftCellAdjust.connect ( boost::bind(&GPUTransfer::onRunInit, this));
       GPUTransfer::onGridInit();
@@ -283,8 +284,8 @@ namespace espressopp {
           GPUStorage->h_id[counterParticles] = p.getId();
           GPUStorage->h_cellId[counterParticles] = localCells[i]->id;
           GPUStorage->h_type[counterParticles] = p.getType();
-          GPUStorage->h_mass[counterParticles] = p.getMass();
-          GPUStorage->h_drift[counterParticles] = p.getDrift();
+          // GPUStorage->h_mass[counterParticles] = p.getMass();
+          // GPUStorage->h_drift[counterParticles] = p.getDrift();
           GPUStorage->h_real[counterParticles] = realParticle;
           counterParticles++;
         }

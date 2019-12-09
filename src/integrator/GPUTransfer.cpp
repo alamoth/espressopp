@@ -97,13 +97,13 @@ namespace espressopp {
       cudaGetDevice(&device);
       err = cudaGetDeviceProperties( &prop, device );
       assert( err == cudaSuccess );
-      printf( "rank %d, device %d, prop %s, pci %d, %d, %d\n",
-              rank,
-              device,
-              prop.name,
-              prop.pciBusID,
-              prop.pciDeviceID,
-              prop.pciDomainID );
+      // printf( "rank %d, device %d, prop %s, pci %d, %d, %d\n",
+      //         rank,
+      //         device,
+      //         prop.name,
+      //         prop.pciBusID,
+      //         prop.pciDeviceID,
+      //         prop.pciDomainID );
       // for (int dev = 0; dev < dev_cnt; ++dev) {
       //     err = cudaGetDeviceProperties( &prop, dev );
       //     assert( err == cudaSuccess );
@@ -115,7 +115,8 @@ namespace espressopp {
       //             prop.pciDomainID );
           // printf("unique id: %.*s\n", (int)sizeof(prop.uuid), prop.uuid);
       // }
-      // cudaSetDevice(6);
+      printf("Rank: %d, using device %d\n", rank, rank % dev_cnt);
+      cudaSetDevice(rank % dev_cnt);
 
     }
 

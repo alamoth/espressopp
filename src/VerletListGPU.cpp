@@ -105,7 +105,7 @@ namespace espressopp {
   {
     time = timeIntegrate.getElapsedTime();
 
-    int n_c_nb = 6; //idk // no support for half cells // i literally got no idea what to put there
+    int n_c_nb = 4; //idk // no support for half cells // i literally got no idea what to put there
 
     cutVerlet = cut + getSystem() -> getSkin();
     System& system = getSystemRef();
@@ -130,11 +130,13 @@ namespace espressopp {
       sizeVl = oldSizeVl;
     }
     
-    // if(n_pt >= oldNpart){
-    cudaFree(d_n_nb); CUERR
-    my_delete(n_nb);
-    n_nb = new int[n_pt];
-    cudaMalloc((void**)&d_n_nb, sizeof(int) * n_pt); CUERR
+    if(n_pt > oldNpart){
+      cudaFree(d_n_nb); CUERR
+      my_delete(n_nb);
+      n_nb = new int[n_pt];
+      cudaMalloc((void**)&d_n_nb, sizeof(int) * n_pt); CUERR
+    }
+
     cudaMemset(d_vlPairs, -1, sizeof(int) * sizeVl); CUERR
     cudaMemset(d_n_nb, -1, sizeof(int) * n_pt); CUERR 
 

@@ -547,12 +547,14 @@ __global__ void
     realG *d_energy;
     realG totalEnergy = 0;
 
-    h_energy = new realG[gpuStorage->numberLocalParticles];
-    cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
-    cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
+    if(mode == 1) {
+      h_energy = new realG[gpuStorage->numberLocalParticles];
+      cudaMalloc(&d_energy, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
+      cudaMemset(d_energy, 0, sizeof(realG) * gpuStorage->numberLocalParticles); CUERR
+      cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles); CUERR
+    }
+    
     unsigned shared_mem_size = ptypes * ptypes * sizeof(realG) * 5;
-    cudaMemset(gpuStorage->d_force, 0, sizeof(realG3) * gpuStorage->numberLocalParticles); CUERR
-
     // cudaEvent_t start, stop;
     // cudaEventCreate(&start); CUERR
     // cudaEventCreate(&stop); CUERR

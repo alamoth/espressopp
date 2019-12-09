@@ -27,7 +27,7 @@
 import time
 import espressopp
 
-nsteps      = 10
+nsteps      = 1
 isteps      = 100
 rc          = pow(2.0, 1.0/6.0)
 skin        = 0.4
@@ -42,13 +42,15 @@ temperature = 1.0
 print espressopp.Version().info()
 print 'Setting up simulation ...'
 bonds, angles, x, y, z, Lx, Ly, Lz = espressopp.tools.lammps.read('examples/polymer_melt/polymer_melt.lammps')
-bonds, angles, x, y, z, Lx, Ly, Lz = espressopp.tools.replicate(bonds, angles, x, y, z, Lx, Ly, Lz, xdim=1, ydim=1, zdim=1)
+bonds, angles, x, y, z, Lx, Ly, Lz = espressopp.tools.replicate(bonds, angles, x, y, z, Lx, Ly, Lz, xdim=2, ydim=2, zdim=2)
 num_particles = len(x)
 density = num_particles / (Lx * Ly * Lz)
 box = (Lx, Ly, Lz)
 system, integrator = espressopp.standard_system.Default(box=box, rc=rc, skin=skin, dt=timestep, temperature=temperature)
+
 GPUSupport = espressopp.integrator.GPUTransfer(system)
 integrator.addExtension(GPUSupport)
+
 # add particles to the system and then decompose
 # do this in chunks of 1000 particles to speed it up
 props = ['id', 'type', 'mass', 'pos']
@@ -62,8 +64,8 @@ for i in range(num_particles):
     new_particles = []
 system.storage.addParticles(new_particles, *props)
 system.storage.decompose()
-# New
 
+# New
 vl      = espressopp.VerletListGPU(system, cutoff = rc)
 potLJ   = espressopp.interaction.LennardJonesGPU(epsilon=1.0, sigma=1.0, cutoff=rc, shift=0)
 interLJ = espressopp.interaction.VerletListLennadJonesGPU(system.storage, vl)

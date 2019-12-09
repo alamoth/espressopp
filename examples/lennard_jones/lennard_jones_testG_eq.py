@@ -13,6 +13,7 @@ rho                = 0.8442
 # length of simulation box
 L                  = pow(Npart/rho, 1.0/3.0)
 # cubic simulation box of size L
+# mult               = (2,2,2)
 mult               = (1,1,1)
 box                = (mult[0]*L, mult[1]*L, mult[2]*L)
 # cutoff of the short range potential
@@ -30,7 +31,7 @@ sigma              = 1.0
 # number of equilibration loops
 equil_nloops       = 1 #10 #10 #20
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 1000 #100 #100
+equil_isteps       = 10000 #100 #100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -128,6 +129,7 @@ for pid in range(Npart):
   # (type=0, mass=1.0, velocity=(0,0,0), charge=0.0)
   # system.storage.addParticle(pid, pos)
 
+# espressopp.tools.replicate_add_particles(system.storage, pos_x, pos_y, pos_z, L, L, L, nodeGrid[0], nodeGrid[1], nodeGrid[2])
 espressopp.tools.replicate_add_particles(system.storage, pos_x, pos_y, pos_z, L, L, L, mult[0], mult[1], mult[2])
 # distribute the particles to parallel CPUs 
 system.storage.decompose()
@@ -179,7 +181,7 @@ for step in range(equil_nloops):
 print "equilibration finished"
 
 end_time = time.clock()
-GPUSupport.printTimers()
+# GPUSupport.printTimers()
 GPUSupport.disconnect()
 # if(verletlist != None):
   # print 'GPU rebuild timer: ' + str(verletlist.getGPUtimer())

@@ -201,24 +201,17 @@ __global__ void
         int currentCellId = *(cellNeighbors+(p_cellId * 27 + i));
         // int currentCellId = ldg(cellNeighbors+(s_cellId[threadIdx.x] * 27 + i));
         int sizeCell = *(cellParticlesN+currentCellId);
-        int cellOffset = *(cellOffsets+currentCellId);
+        int currentCellOffset = *(cellOffsets+currentCellId);
         for(int j = 0; j < sizeCell; ++j){
-          int pOffset = cellOffset + j;
+          int pOffset = currentCellOffset + j;
           if(pOffset != idx){
             int potIdx = p_type * numPots + *(type+pOffset);
             // int potIdx = s_type[threadIdx.x] * numPots + ldg(type+pOffset);
             realG3 p2_pos = pos[pOffset];
-            // s_pos2[idx] = pos[pOffset];
-            realG3 p_dist;
-            // p_dist.x = s_pos1[threadIdx.x].x - p2_pos.x;
-            // p_dist.y = s_pos1[threadIdx.x].y - p2_pos.y;
-            // p_dist.z = s_pos1[threadIdx.x].z - p2_pos.z;               
-            // p_dist.x = s_pos1[idx].x - s_pos2[idx].x;
-            // p_dist.y = s_pos1[idx].y - s_pos2[idx].y;
-            // p_dist.z = s_pos1[idx].z - s_pos2[idx].z;            
-            p_dist = p_pos - p2_pos;
-            realG distSqr = dot(p_dist, p_dist);
-            // p_dist.x * p_dist.x + p_dist.y * p_dist.y + p_dist.z * p_dist.z;
+            // s_pos2[idx] = pos[pOffset];         
+            realG3 distVec = p_pos - p2_pos;
+            realG distSqr = dot(distVec, distVec);
+            // distVec.x * distVec.x + distVec.y * distVec.y + distVec.z * distVec.z;
             if(distSqr <= (s_cutoff[potIdx] * s_cutoff[potIdx])){
             // if(distSqr <= (gpuPots[potIdx].cutoff * gpuPots[potIdx].cutoff)){
               if(mode == 0){
@@ -226,8 +219,8 @@ __global__ void
                 realG frac6 = frac2 * frac2 * frac2;
                 realG calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
                 // realG calcResult = frac6 * (gpuPots[potIdx].ff1 * frac6 - gpuPots[potIdx].ff2) * frac2;
-                p_force += p_dist * calcResult;
-                // s_force[threadIdx.x] += p_dist * calcResult;
+                p_force += distVec * calcResult;
+                // s_force[threadIdx.x] += distVec * calcResult;
               }
               if(mode == 1){
                 realG frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;

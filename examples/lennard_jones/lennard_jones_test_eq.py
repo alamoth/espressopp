@@ -13,7 +13,7 @@ rho                = 0.8442
 # length of simulation box
 L                  = pow(Npart/rho, 1.0/3.0)
 # cubic simulation box of size L
-mult               = (3,3,3)
+mult               = (2,2,2)
 # mult               = (1,1,1)
 box                = (mult[0]*L, mult[1]*L, mult[2]*L)
 # cutoff of the short range potential
@@ -31,7 +31,7 @@ sigma              = 1.0
 # number of equilibration loops
 equil_nloops       = 1 #10 #1 #20 #10
 # number of integration steps performed in each equilibration loop
-equil_isteps       = 100 # 100
+equil_isteps       = 1000 # 100
 
 # print ESPResSo++ version and compile info
 print espressopp.Version().info()
@@ -107,7 +107,7 @@ if (temperature != None):
 # f = open('32768Eq')
 # f = open('100000Eq')
 # f = open(str(Npart)+'Eq')
-f = open('/gpfs/fs2/project/zdvhpc/alamothParticles/'+str(Npart)+'Eq')
+f = open('/gpfs/fs2/project/zdvhpc/alamothParticles/'+str(Npart)+'Eq.xyz')
 lines = f.readlines()
 pos_x = []
 pos_y = []

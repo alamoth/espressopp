@@ -82,6 +82,10 @@ namespace espressopp {
     //** Get the number of pairs for the local Verlet list */
     int localSize() const;
 
+    int getVLfactor() { return vlFactor; }
+
+    void setVLfactor(int _vlFactor) { vlFactor = _vlFactor; }
+
     /** Add pairs to exclusion list */
     bool exclude(longint pid1, longint pid2);
 
@@ -106,6 +110,7 @@ namespace espressopp {
     int sizeVl = 0;
     int max_n_nb;
     int n_pt;
+    int vlFactor;
 
     esutil::WallTimer timeIntegrate; // timers
     double time;

@@ -63,6 +63,7 @@ namespace espressopp {
     cutVerlet = cut + system -> getSkin();
     cutsq = cutVerlet * cutVerlet;
     builds = 0;
+    vlFactor = 4; //idk, i literally got no idea what to put there
 
     time = 0;
     timeGPUrebuild = 0;
@@ -105,7 +106,7 @@ namespace espressopp {
   {
     time = timeIntegrate.getElapsedTime();
 
-    int n_c_nb = 4; //idk // no support for half cells // i literally got no idea what to put there
+    int vlFactor = 
 
     cutVerlet = cut + getSystem() -> getSkin();
     System& system = getSystemRef();
@@ -202,6 +203,8 @@ namespace espressopp {
       .def("disconnect", &VerletListGPU::disconnect)
       .def("getGPUtimer", &VerletListGPU::getRebuildTime)
       .def("getVerletCutoff", &VerletListGPU::getVerletCutoff)
+      .def("setVLfactor", &VerletListGPU::setVLfactor)
+      .def("getVLfactor", &VerletListGPU::getVLfactor)
       ;
   }
 

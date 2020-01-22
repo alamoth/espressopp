@@ -110,11 +110,13 @@ namespace espressopp {
       }
       real getSigma() const { return sigma; }
       
+      // Function to call CUDA force calculation kernel without Verlet list
       bool _computeForceGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int ptypes){
         LJGPUdriver(gpuStorage, gpuPots, ptypes, 0);
         return true;
       }
 
+      // Function to call CUDA force calculation kernel with Verlet list
       bool _computeForceGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int ptypes, int* vl, int* n_nb){
         LJGPUdriverVl(gpuStorage, gpuPots, ptypes, vl, n_nb, 0);
         return true;
@@ -128,12 +130,14 @@ namespace espressopp {
         real ffactor = frac6 * (ff1 * frac6 - ff2) * frac2;
         force = dist * ffactor;
         return true;
-                      }
+      }
 
+      // Function to call CUDA energy calculation kernel without Verlet list
       real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int ptypes){
         return LJGPUdriver(gpuStorage, gpuPots, ptypes, 1);
       }
 
+      // Function to call CUDA energy calculation kernel with Verlet list
       real _computeEnergyGPU(StorageGPU *gpuStorage, d_LennardJonesGPU *gpuPots, int ptypes, int* vl, int* n_nb){
         return LJGPUdriverVl(gpuStorage, gpuPots, ptypes, vl, n_nb, 1);
       }

@@ -49,6 +49,7 @@ namespace espressopp {
     GPUTransfer::GPUTransfer(shared_ptr<System> system)
     : Extension(system)
     {
+      // Initiate timers
       timeTotal;
       timeFillParticleVars = 0;
       timeFillParticleStatics = 0;
@@ -78,6 +79,7 @@ namespace espressopp {
       int* d_init;
       
       time = timeIntegrate.getElapsedTime();
+      // Initiate CUDA context with a malloc of 1 byte to ensure correct timers
       cudaMalloc(&d_init, 1);
       cudaFree(d_init);
       timeGPUinit += time = timeIntegrate.getElapsedTime(); - time;
@@ -90,7 +92,6 @@ namespace espressopp {
       int dev_cnt = 0;
       err = cudaGetDeviceCount( &dev_cnt );
       assert( err == cudaSuccess || err == cudaErrorNoDevice );
-      // // printf( "rank %d, mpi size: %d, cnt %d\n", rank, size, dev_cnt );
       
       cudaDeviceProp prop;
       int device;
@@ -115,6 +116,8 @@ namespace espressopp {
       //             prop.pciDomainID );
           // printf("unique id: %.*s\n", (int)sizeof(prop.uuid), prop.uuid);
       // }
+
+      // Set device with rank % total number of devices
       printf("Rank: %d, using device %d\n", rank, rank % dev_cnt);
       cudaSetDevice(rank % dev_cnt);
 
@@ -159,6 +162,7 @@ namespace espressopp {
     // }
 
     void GPUTransfer::resizeCellData(){
+      // Allocate and resize cell data
       time = timeIntegrate.getElapsedTime();
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
@@ -170,13 +174,11 @@ namespace espressopp {
       GPUStorage->resizeCellData();
       timeGResizeCellData += timeIntegrate.getElapsedTime() - time;
 
-      // delete mortonMapping;
-      // mortonMapping = NULL;
       cResizeCellData++;
     }
 
     void GPUTransfer::fillCellData(){
-      time = timeIntegrate.getElapsedTime(); // timer
+      time = timeIntegrate.getElapsedTime(); 
       System& system = getSystemRef();
       StorageGPU* GPUStorage = system.storage->getGPUstorage();
       CellList localCells = system.storage->getLocalCells();
@@ -190,7 +192,6 @@ namespace espressopp {
         int nearest2Power = pow(2, ceil(base2));
         int sizeMM = pow(nearest2Power, 3);
 
-        // int sizeMM = pow(pow(2,ceil(log2((float)dim))),3);
         mortonMapping.resize(sizeMM);
         std::fill (mortonMapping.begin(), mortonMapping.end(), -1);
       }
@@ -198,6 +199,8 @@ namespace espressopp {
 
       bool realCell;
       int3 mappedPos;
+      // To create the 27 required cells, iterate though the first 13, then the own cell, 
+      // then the last 13 to ensure good memory access
       for(unsigned int i = 0; i < nLocalCells; ++i) {
         if(mortonSorting){
           uint_fast32_t* to3;
@@ -241,6 +244,7 @@ namespace espressopp {
       cOnDecompose++;
     }
 
+    // Get the new number of local particles and resize CPU and GPU arrays
     void GPUTransfer::resizeParticleData(){
       time = timeIntegrate.getElapsedTime();
       System& system = getSystemRef();

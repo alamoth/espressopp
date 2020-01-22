@@ -94,6 +94,7 @@ namespace espressopp {
       realG getCutoff() const { return cutoff; }
     };
 
+    // CPU declarations
     realG LJGPUdriver (StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int ptypes, int mode);
     realG LJGPUdriverVl(StorageGPU* gpuStorage, d_LennardJonesGPU* gpuPots, int ptypes, int* vl, int* n_nb, int mode);
   }

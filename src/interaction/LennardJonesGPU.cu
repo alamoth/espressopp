@@ -57,6 +57,7 @@ return *ptr;
 namespace espressopp {
   namespace interaction {
 
+// Kernel using Verlet list
 __global__ void 
     verletListKernel( const int nPart,
                 const realG3* __restrict__ pos,
@@ -102,9 +103,10 @@ __global__ void
       realG p_energy = 0;
       int n_nb = num_nb[idx];
 
+      // Iterate particle specific Verlet list
       for(int i = 0; i < n_nb; ++i){
+        // Load particle data into thread memory and calculate squared distance 
         int p2_idx = vl[i * nPart + idx];
-
         realG3 p_dist;
         realG3 p2_pos = pos[p2_idx];
         int potIdx = p_type * numPots + type[p2_idx];
@@ -112,12 +114,14 @@ __global__ void
         realG distSqr = dot(p_dist, p_dist);
         if(distSqr <= (s_cutoff[potIdx] * s_cutoff[potIdx])){
           if(mode == 0){
+            // Inline force calculation
             realG frac2 = 1.0 / distSqr;
             realG frac6 = frac2 * frac2 * frac2;
             realG calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
             p_force += p_dist * calcResult;
           }
           if(mode == 1){
+            // Inline energy calculation
             realG frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;
             realG frac6 = frac2 * frac2 * frac2;
             realG calcResult = 4.0 * s_epsilon[potIdx] * (frac6 * frac6 - frac6);
@@ -134,6 +138,8 @@ __global__ void
         energy[idx] = p_energy;
       }
     }
+
+    // Kernel not using Verlet list, OTP
     __global__ void 
     testKernel( const int nPart,
                 const int nCells,
@@ -172,64 +178,42 @@ __global__ void
 
       if (idx >= nPart) return;
       if (!real[idx]) return;
-
-      // __shared__ realG3 s_pos1[THREADSPERBLOCK];
-      //__shared__ realG3 s_pos2[THREADSPERBLOCK];
-      // __shared__ int s_type[THREADSPERBLOCK];
-      // __shared__ int s_cellId[THREADSPERBLOCK];
-      // __shared__ realG3 s_force[THREADSPERBLOCK];
-      // __shared__ realG s_energy[THREADSPERBLOCK];
       __syncthreads();
-      
-      
-
 
       realG3 p_pos = pos[idx];
-      // s_pos1[threadIdx.x] = pos[idx];
       //realG p_mass = mass[idx];
       //realG p_drift = drift[idx];
       int p_type = type[idx];
-      // s_type[threadIdx.x] = ldg(type+idx);
       int p_cellId = cellId[idx];
-      // s_cellId[threadIdx.x] = ldg(cellId+idx);
       realG3 p_force = make_realG3(0.0,0.0,0.0);
-      // s_force[threadIdx.x] =  make_realG3(0.0,0.0,0.0);
       realG p_energy = 0;
-      // s_energy[threadIdx.x] = 0;
-      // #pragma unroll
+      // Iterate over all 27 required cells
       for(int i = 0; i < 27; ++i){
+        // Load cell metadata
         int currentCellId = *(cellNeighbors+(p_cellId * 27 + i));
-        // int currentCellId = ldg(cellNeighbors+(s_cellId[threadIdx.x] * 27 + i));
         int sizeCell = *(cellParticlesN+currentCellId);
         int currentCellOffset = *(cellOffsets+currentCellId);
+        // Iterate over all particles inside the cell
         for(int j = 0; j < sizeCell; ++j){
           int pOffset = currentCellOffset + j;
-          if(pOffset != idx){
+          if(pOffset != idx){ // If particles are not the same
+            // Load second particle data
             int potIdx = p_type * numPots + *(type+pOffset);
-            // int potIdx = s_type[threadIdx.x] * numPots + ldg(type+pOffset);
             realG3 p2_pos = pos[pOffset];
-            // s_pos2[idx] = pos[pOffset];         
             realG3 distVec = p_pos - p2_pos;
             realG distSqr = dot(distVec, distVec);
-            // distVec.x * distVec.x + distVec.y * distVec.y + distVec.z * distVec.z;
             if(distSqr <= (s_cutoff[potIdx] * s_cutoff[potIdx])){
-            // if(distSqr <= (gpuPots[potIdx].cutoff * gpuPots[potIdx].cutoff)){
               if(mode == 0){
                 realG frac2 = 1.0 / distSqr;
                 realG frac6 = frac2 * frac2 * frac2;
                 realG calcResult = frac6 * (s_ff1[potIdx] * frac6 - s_ff2[potIdx]) * frac2;
-                // realG calcResult = frac6 * (gpuPots[potIdx].ff1 * frac6 - gpuPots[potIdx].ff2) * frac2;
                 p_force += distVec * calcResult;
-                // s_force[threadIdx.x] += distVec * calcResult;
               }
               if(mode == 1){
                 realG frac2 = s_sigma[potIdx] * s_sigma[potIdx] / distSqr;
-                // realG frac2 = gpuPots[potIdx].sigma * gpuPots[potIdx].sigma / distSqr;
                 realG frac6 = frac2 * frac2 * frac2;
                 realG calcResult = 4.0 * s_epsilon[potIdx] * (frac6 * frac6 - frac6);
-                // realG calcResult = 4.0 * gpuPots[potIdx].epsilon * (frac6 * frac6 - frac6);
                 p_energy += calcResult;
-                // s_energy[threadIdx.x] += calcResult;
               }
             }
           }
@@ -239,14 +223,14 @@ __global__ void
       }
       if(mode == 0){
         force[idx] = p_force;
-        // force[idx] = s_force[threadIdx.x];
       }
 
       if(mode == 1){
         energy[idx] = p_energy;
-        // energy[idx] = s_energy[threadIdx.x];
       }
     }
+
+    // OBC kernel version 1
     __global__ void 
     testKernel2( const int nPart,
                 const int nCells,
@@ -265,7 +249,6 @@ __global__ void
                 const d_LennardJonesGPU* gpuPots,
                 const int numPots,
                 const int mode){
-      // __shared__ realG3 s_pos[THREADSPERBLOCK];
       __shared__ realG s_pos_x[THREADSPERBLOCK];
       __shared__ realG s_pos_y[THREADSPERBLOCK];
       __shared__ realG s_pos_z[THREADSPERBLOCK];
@@ -274,17 +257,11 @@ __global__ void
       //__shared__ realG[THREADSPERBLOCK] s_drift;
       __shared__ int s_type[THREADSPERBLOCK];
       __shared__ int activeThreads;
-      // __shared__ realG s_force_x[THREADSPERBLOCK];
-      // __shared__ realG s_force_y[THREADSPERBLOCK];
-      // __shared__ realG s_force_z[THREADSPERBLOCK];
       __shared__ realG s_energy[THREADSPERBLOCK];
       __shared__ int numberRuns;
       int potI;
       bool sameId;
       int calcCellOffset = cellOffsets[blockIdx.x];
-      // s_force_x[threadIdx.x] = 0.0f;
-      // s_force_y[threadIdx.x] = 0.0f;
-      // s_force_z[threadIdx.x] = 0.0f;
       realG p_energy;
 
       s_energy[threadIdx.x] = 0.0f;
@@ -296,6 +273,8 @@ __global__ void
       if(real[calcCellOffset] == false){
         return;
       }
+
+      // Thread 0 sums up all neighbor particles
       if(threadIdx.x == 0){
         int numberNeighborParticles = 0;
         for(int i = 0; i < 27; ++i){
@@ -315,28 +294,15 @@ __global__ void
       for(int i = 0; i < numberRuns; ++i){
         activeThreads = 0;
         int ii,jj;
+        // Workaround with goto to address and load neighbor particles into shared memory
         if(threadIdx.x == 0){
           for(ii = currentii; ii < 27; ++ii){
-            // if(blockIdx.x == 41 && mode == 0) {
-            //   printf("accessing neighbor cell: %d\n", cellNeighbors[blockIdx.x * 27 + ii]);
-            // }
             for(jj = currentjj; jj < cellParticles[cellNeighbors[blockIdx.x * 27 + ii]]; ++jj){
-              if(activeThreads == THREADSPERBLOCK){ //} || (ii == 26 && jj == cellParticles[cellNeighbors[blockIdx.x * 27 + 26]] - 1)){
-                //sharedMemfull = true;
+              if(activeThreads == THREADSPERBLOCK){
                 currentii = ii;
                 currentjj = jj;
                 goto end;
-                // if(jj == cellParticles[cellNeighbors[blockIdx.x * 27 + ii]] - 1){
-                //   currentii = ii+1;
-                //   currentjj = 0;
-                // } else {
-                //   currentjj = jj + 1;
-                //   currentii = ii;
-                // }
               } else{
-                // if(blockIdx.x == 41 && mode == 0) {
-                //   printf("activeThreads %d, ii %d, jj %d, blockIdx %d\n", activeThreads, ii, jj, blockIdx.x);
-                // }
                 s_pos_x[activeThreads] = pos[cellOffsets[cellNeighbors[blockIdx.x * 27 + ii]] + jj].x;
                 s_pos_y[activeThreads] = pos[cellOffsets[cellNeighbors[blockIdx.x * 27 + ii]] + jj].y;
                 s_pos_z[activeThreads] = pos[cellOffsets[cellNeighbors[blockIdx.x * 27 + ii]] + jj].z;
@@ -350,10 +316,8 @@ __global__ void
           end:;
         }
         __syncthreads();
+        // Iterate over neighbor particles
         for(int j = 0; j < cellParticles[blockIdx.x]; ++j){
-          // s_force_x[threadIdx.x] = 0.0f;
-          // s_force_y[threadIdx.x] = 0.0f;
-          // s_force_z[threadIdx.x] = 0.0f;
           s_energy[threadIdx.x] = 0.0f;
           p_energy = 0.0f;
           p_force.x = 0.0f;
@@ -362,10 +326,6 @@ __global__ void
           potI = s_type[threadIdx.x] * numPots + type[calcCellOffset + j];
           sameId = s_id[threadIdx.x] == id[calcCellOffset + j] ? true : false;
           if(threadIdx.x < activeThreads){
-            //printf("threadIdx.x=%d, idx.x: %d, own particle id: %d\n", threadIdx.x, idx, s_id[threadIdx.x]);
-            // p_dist.x = s_pos[threadIdx.x].x - pos[calcCellOffset + j].x;
-            // p_dist.y = s_pos[threadIdx.x].y - pos[calcCellOffset + j].y;
-            // p_dist.z = s_pos[threadIdx.x].z - pos[calcCellOffset + j].z;
             p_dist.x = pos[calcCellOffset + j].x - s_pos_x[threadIdx.x];
             p_dist.y = pos[calcCellOffset + j].y - s_pos_y[threadIdx.x];
             p_dist.z = pos[calcCellOffset + j].z - s_pos_z[threadIdx.x];
@@ -376,13 +336,9 @@ __global__ void
                   realG frac2 = 1.0 / distSqr;
                   realG frac6 = frac2 * frac2 * frac2;
                   realG ffactor = frac6 * (gpuPots[potI].ff1 * frac6 - gpuPots[potI].ff2) * frac2;
-                  // s_force_x[threadIdx.x] = p_dist.x * ffactor;
-                  // s_force_y[threadIdx.x] = p_dist.y * ffactor;
-                  // s_force_z[threadIdx.x] = p_dist.z * ffactor;
                   p_force.x = p_dist.x * ffactor;
                   p_force.y = p_dist.y * ffactor;
                   p_force.z = p_dist.z * ffactor;
-                  //printf("2. id1=%d, id2=%d %f %f %f\n", id[calcCellOffset + j], s_id[threadIdx.x], p_dist.x * ffactor,  p_dist.y * ffactor, p_dist.z * ffactor);
 
                 }
                 if(mode == 1){
@@ -390,7 +346,6 @@ __global__ void
                   realG frac6 = frac2 * frac2 * frac2;
                   realG energy = 4.0 * gpuPots[potI].epsilon * (frac6 * frac6 - frac6);
                   p_energy = energy;
-                  //printf("Energy threadIdx: %d, %f\n",threadIdx.x, p_energy);
                   s_energy[threadIdx.x] = energy;
                 }
               }
@@ -399,17 +354,6 @@ __global__ void
           __syncthreads();
           if(mode == 0){
             p_force = blockReduceSumTriple(p_force, 0xffffffff);
-            // if(threadIdx.x == 0){
-            //   for(int k = 0; k < activeThreads; ++k){
-            //     force[calcCellOffset + j].x += s_force_x[k];
-            //     force[calcCellOffset + j].y += s_force_y[k];
-            //     force[calcCellOffset + j].z += s_force_z[k];
-            //   }
-            // }
-            // if(threadIdx.x < activeThreads){
-            //   force[calcCellOffset + j].x += s_force_x[threadIdx.x];
-            //   force[calcCellOffset + j].y += s_force_y[threadIdx.x];
-            //   force[calcCellOffset + j].z += s_force_z[threadIdx.x];
             if(threadIdx.x == 0){
               force[calcCellOffset + j].x += p_force.x;
               force[calcCellOffset + j].y += p_force.y;
@@ -419,11 +363,9 @@ __global__ void
           if(mode == 1){
             p_energy = blockReduceSum(p_energy, 0xffffffff);
             if(threadIdx.x == 0){
-              // energy[calcCellOffset + j] += p_energy;
               for(int k = 0; k < activeThreads; ++k){
                 energy[calcCellOffset + j] += s_energy[k];
               }
-              //printf("pos in memory:: %d, Energy blockIdx: %d, Penergy: %f\n", calcCellOffset + j, blockIdx.x, energy[calcCellOffset + j]);
             }
           }
           __syncthreads();
@@ -432,6 +374,7 @@ __global__ void
       }
     }
 
+    // OBC version 2, warp approach
     __global__ void 
     testKernel3(const int nPart,
                 const int nCells,
@@ -450,7 +393,6 @@ __global__ void
                 const d_LennardJonesGPU* __restrict__ gpuPots,
                 int numPots,
                 int mode){
-      // int idx = blockIdx.x * blockDim.x + threadIdx.x;
       __shared__ int numberLineParticles[9];
       __shared__ int numberLineWarps[9];
 
@@ -469,6 +411,7 @@ __global__ void
 
       int dataOffset = cellOffsets[cellNeighbors[blockIdx.x * 27 + 3 * warpId]];
 
+      // Calculate total number of particles in a lane, each assigned to one warp
       if(threadIdx.x < 9){
         numberLineParticles[threadIdx.x] = cellParticles[cellNeighbors[(blockIdx.x * 27) + (3 * threadIdx.x) + 0]] +
                                             cellParticles[cellNeighbors[(blockIdx.x * 27) + (3 * threadIdx.x) + 1]] +
@@ -477,7 +420,9 @@ __global__ void
       }
       __syncthreads();
 
+      // Iterate though all particles on each line
       for(int i = 0; i < numberLineWarps[warpId]; ++i){
+        // Since not all threads inside a warp are active, calculate the mask for the reduction
         unsigned mask = __ballot_sync(0xffffffff, i * warpSize + laneId < numberLineParticles[warpId]);
         if(i * warpSize + laneId < numberLineParticles[warpId]){
           realG3 t_pos = pos[dataOffset + i * warpSize + laneId];

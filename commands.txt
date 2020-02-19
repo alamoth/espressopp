@@ -1,0 +1,42 @@
+// Load correct modules
+module load data/h5py/2.8.0-fosscuda-2019.01-Python-2.7.15 devel/CMake/3.13.4
+
+// Used CMake command
+cmake \
+-DFFTW3_LIBRARIES=$EBROOTFFTW/lib/libfftw3.so \
+-DFFTW3_INCLUDES=$EBROOTFFTW/include \
+-DEXTERNAL_BOOST=off \
+-DCMAKE_CUDA_FLAGS="\
+--generate-code arch=compute_61,code=sm_61 \
+--generate-code arch=compute_70,code=sm_70 \
+" .
+
+// Allocating on DGX
+salloc -N 1 --gres=gpu:1 -p deeplearning -A m2_trr146 -t 5:00:00
+
+// Profile with Nsight compute
+/cluster/easybuild/nehalem/software/system/CUDA/10.0.130/NsightCompute-1.0/nv-nsight-cu-cli \
+-f -o v100_otpv_ghostReal \
+/cluster/easybuild/nehalem/software/lang/Python/2.7.15-foss-2018b/bin/python examples/lennard_jones/lennard_jones_testG_eq.py
+
+// Batch script
+#!/bin/bash
+ 
+#SBATCH -J mysimplegpujob        # Job name
+#SBATCH -o mysimplegpujob.%j.out # Specify stdout output file (%j expands to jobId)
+#SBATCH -p deeplearning                # Partition name
+#SBATCH -N 1                     # Total number of nodes requested (48 cores/node per GPU node)
+
+#SBATCH -n 8                     # Total number of tasks 
+#SBATCH --gres=gpu:2        
+
+#SBATCH -c 1                    # CPUs per task 
+#SBATCH -t 3:00:00              # Run time (hh:mm:ss) - 0.5 hours
+ 
+#SBATCH -A m2_trr146          # Specify allocation to charge against
+module load data/h5py/2.8.0-fosscuda-2019.01-Python-2.7.15 devel/CMake/3.13.4
+ 
+# Launch the executable
+srun python examples/lennard_jones/lennard_jones_testG_eq.py
+# srun python examples/lennard_jones/lennard_jones_test_eq.py
+# srun python examples/polymer_melt/polymer_melt.py

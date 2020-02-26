@@ -106,13 +106,11 @@ namespace espressopp {
   {
     time = timeIntegrate.getElapsedTime();
 
-    int vlFactor = 
-
     cutVerlet = cut + getSystem() -> getSkin();
     System& system = getSystemRef();
     StorageGPU* GS = system.storage->getGPUstorage();
     cutsq = cutVerlet * cutVerlet;
-    max_n_nb = GS->max_n_nb * n_c_nb;
+    max_n_nb = GS->max_n_nb * vlFactor;
 
     int oldSizeVl = sizeVl;
     int oldNpart = n_pt;

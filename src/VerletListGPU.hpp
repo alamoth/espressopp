@@ -110,7 +110,7 @@ namespace espressopp {
     int sizeVl = 0;
     int max_n_nb;
     int n_pt;
-    int vlFactor;
+    int vlFactor = 4;
 
     esutil::WallTimer timeIntegrate; // timers
     double time;
